@@ -1,0 +1,23 @@
+# Node
+node_modules/
+server/dist/
+server/public/
+
+# Release (keep the directory, not the contents)
+release/*
+!release/.gitkeep
+!release/start_server.bat
+
+# Godot
+client/.godot/
+*.import
+client/export_presets.cfg~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example

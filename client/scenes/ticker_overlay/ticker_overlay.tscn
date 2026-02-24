@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://bafmqihjgs5aa"]
+
+[ext_resource type="Script" uid="uid://b7l6pirberid7" path="res://scenes/ticker_overlay/ticker_overlay.gd" id="1_b6r1e"]
+
+[node name="TickerOverlay" type="Node2D" unique_id=19481219]
+script = ExtResource("1_b6r1e")
+
+[node name="Label" type="Label" parent="." unique_id=7957304]
+offset_left = 1494.0
+offset_top = 252.0
+offset_right = 1541.0
+offset_bottom = 275.0
+text = "Time: "

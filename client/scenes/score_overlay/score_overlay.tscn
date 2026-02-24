@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://d3score000001"]
+
+[ext_resource type="Script" uid="uid://cgoi35uwaqq57" path="res://scenes/score_overlay/score_overlay.gd" id="1_jgl57"]
+
+[node name="ScoreOverlay" type="Node2D" unique_id=1788220040]
+script = ExtResource("1_jgl57")
+
+[node name="Label" type="Label" parent="." unique_id=844801848]
+offset_left = 724.0
+offset_top = 402.0
+offset_right = 803.0
+offset_bottom = 425.0
+text = "Score: 500"

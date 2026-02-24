@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://c11eh0glvx0to"]
+
+[ext_resource type="Script" uid="uid://c3udkhtkxrs58" path="res://scenes/standings_overlay/standings_overlay.gd" id="1_eht6d"]
+
+[node name="StandingsOverlay" type="Node2D" unique_id=1265137379]
+script = ExtResource("1_eht6d")
+
+[node name="Label" type="Label" parent="." unique_id=1870406394]
+offset_left = 136.0
+offset_top = 340.0
+offset_right = 217.0
+offset_bottom = 363.0
+text = "Standings:"
