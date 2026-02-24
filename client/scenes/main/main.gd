@@ -68,8 +68,8 @@ func _spawn_overlay() -> void:
 			if kv.size() == 2 and kv[0] == "overlay":
 				key = kv[1].to_lower().strip_edges()
 				break
-
-	key = "standings"
+	else:
+		key = "standings"
 	if key in OVERLAYS:
 		add_child((OVERLAYS[key] as PackedScene).instantiate())
 

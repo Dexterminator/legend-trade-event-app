@@ -1,13 +1,22 @@
 [gd_scene format=3 uid="uid://d3score000001"]
 
-[ext_resource type="Script" uid="uid://cgoi35uwaqq57" path="res://scenes/score_overlay/score_overlay.gd" id="1_jgl57"]
+[ext_resource type="Script" uid="uid://cgoi35uwaqq57" path="res://scenes/score_overlay/score_overlay.gd" id="1_ei85i"]
+[ext_resource type="Theme" uid="uid://mdn7ofcnq8dn" path="res://assets/theme.tres" id="2_2yr8w"]
 
 [node name="ScoreOverlay" type="Node2D" unique_id=1788220040]
-script = ExtResource("1_jgl57")
+script = ExtResource("1_ei85i")
 
-[node name="Label" type="Label" parent="." unique_id=844801848]
+[node name="Control" type="Control" parent="." unique_id=376239971]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+theme = ExtResource("2_2yr8w")
+
+[node name="Label" type="Label" parent="Control" unique_id=844801848]
+layout_mode = 0
 offset_left = 724.0
 offset_top = 402.0
-offset_right = 803.0
-offset_bottom = 425.0
+offset_right = 1061.0
+offset_bottom = 486.0
 text = "Score: 500"

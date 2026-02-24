@@ -7,6 +7,7 @@ server/public/
 release/*
 !release/.gitkeep
 !release/start_server.bat
+!release/start_server.sh
 
 # Godot
 client/.godot/
@@ -21,3 +22,11 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# other
+.clj-kondo/
+.vscode/
+.lsp/
+client/.clj-kondo/
+client/.vscode/
+client/.lsp/

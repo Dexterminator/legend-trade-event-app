@@ -1,7 +1,7 @@
 extends Node2D
 ## ScoreOverlay — displays the score text broadcast from the server.
 
-@onready var label: Label = $Label
+@onready var label: Label = $Control/Label
 
 
 func _ready() -> void:

@@ -1,7 +1,7 @@
 extends Node2D
 ## TickerOverlay — displays the ticker text broadcast from the server.
 
-@onready var label: Label = $Label
+@onready var label: Label = $Control/Label
 
 
 func _ready() -> void:

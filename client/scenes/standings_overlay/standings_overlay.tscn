@@ -1,13 +1,46 @@
 [gd_scene format=3 uid="uid://c11eh0glvx0to"]
 
-[ext_resource type="Script" uid="uid://c3udkhtkxrs58" path="res://scenes/standings_overlay/standings_overlay.gd" id="1_eht6d"]
+[ext_resource type="Script" uid="uid://c3udkhtkxrs58" path="res://scenes/standings_overlay/standings_overlay.gd" id="1_ecs45"]
+[ext_resource type="Theme" uid="uid://mdn7ofcnq8dn" path="res://assets/theme.tres" id="2_ldnha"]
+
+[sub_resource type="Curve" id="Curve_ldnha"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.33928573, 1), 0.007439866, 0.007439866, 0, 0, Vector2(0.7168367, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="Gradient" id="Gradient_ldnha"]
+colors = PackedColorArray(0, 0.3476059, 0.73542976, 1, 1, 1, 1, 1)
 
 [node name="StandingsOverlay" type="Node2D" unique_id=1265137379]
-script = ExtResource("1_eht6d")
+script = ExtResource("1_ecs45")
 
-[node name="Label" type="Label" parent="." unique_id=1870406394]
-offset_left = 136.0
-offset_top = 340.0
-offset_right = 217.0
-offset_bottom = 363.0
-text = "Standings:"
+[node name="Control" type="Control" parent="." unique_id=1168650952]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+theme = ExtResource("2_ldnha")
+
+[node name="Label" type="Label" parent="Control" unique_id=1870406394]
+layout_mode = 0
+offset_left = 794.0
+offset_top = 243.0
+offset_right = 920.0
+offset_bottom = 410.0
+theme_override_font_sizes/font_size = 128
+
+[node name="CPUParticles2D" type="CPUParticles2D" parent="." unique_id=522469242]
+position = Vector2(902, 439)
+emitting = false
+amount = 20
+lifetime = 1.4000000000000001
+one_shot = true
+speed_scale = 1.2
+explosiveness = 0.8
+direction = Vector2(0, -1)
+initial_velocity_min = 200.0
+initial_velocity_max = 800.0
+scale_amount_min = 0.5
+scale_amount_max = 30.0
+scale_amount_curve = SubResource("Curve_ldnha")
+color = Color(0.94643027, 0.00076508644, 0.951647, 1)
+color_ramp = SubResource("Gradient_ldnha")

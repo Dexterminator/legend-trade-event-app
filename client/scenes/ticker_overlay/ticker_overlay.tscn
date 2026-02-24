@@ -1,11 +1,20 @@
 [gd_scene format=3 uid="uid://bafmqihjgs5aa"]
 
-[ext_resource type="Script" uid="uid://b7l6pirberid7" path="res://scenes/ticker_overlay/ticker_overlay.gd" id="1_b6r1e"]
+[ext_resource type="Script" uid="uid://b7l6pirberid7" path="res://scenes/ticker_overlay/ticker_overlay.gd" id="1_2orba"]
+[ext_resource type="Theme" uid="uid://mdn7ofcnq8dn" path="res://assets/theme.tres" id="2_ctxvd"]
 
 [node name="TickerOverlay" type="Node2D" unique_id=19481219]
-script = ExtResource("1_b6r1e")
+script = ExtResource("1_2orba")
 
-[node name="Label" type="Label" parent="." unique_id=7957304]
+[node name="Control" type="Control" parent="." unique_id=718389016]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+theme = ExtResource("2_ctxvd")
+
+[node name="Label" type="Label" parent="Control" unique_id=7957304]
+layout_mode = 0
 offset_left = 1494.0
 offset_top = 252.0
 offset_right = 1541.0
