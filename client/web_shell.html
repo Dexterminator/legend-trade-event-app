@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Legend Trade Event</title>
+    <style>
+        /* Transparent background — required for OBS browser source.
+       In OBS: tick "Allow transparency" on the Browser Source. */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background: transparent !important;
+            overflow: hidden;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            /* Transparent until the engine signals it is ready */
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            background: transparent !important;
+        }
+
+        #canvas.ready {
+            opacity: 1;
+        }
+    </style>
+    $GODOT_HEAD_INCLUDE
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        var ENGINE_CONFIG = $GODOT_CONFIG;
+    </script>
+    <script src="index.js"></script>
+    <script>
+        (function () {
+            var canvas = document.getElementById('canvas');
+
+            var engine = new Engine(ENGINE_CONFIG);
+
+            engine
+                .startGame({ canvas: canvas })
+                .then(function () {
+                    canvas.classList.add('ready');
+                })
+                .catch(function (err) {
+                    console.error('[Godot] Engine failed to start:', err);
+                });
+        })();
+    </script>
+</body>
+
+</html>

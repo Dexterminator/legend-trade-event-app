@@ -3,6 +3,7 @@ import type { Server } from 'node:http'
 import { state } from './state.js'
 
 let wss: WebSocketServer | null = null
+let mockInterval: ReturnType<typeof setInterval> | null = null
 
 export function createWsServer(server: Server): WebSocketServer {
     wss = new WebSocketServer({ server, path: '/ws' })
@@ -27,8 +28,22 @@ export function createWsServer(server: Server): WebSocketServer {
     return wss
 }
 
+export function closeWsServer(): void {
+    if (mockInterval !== null) {
+        clearInterval(mockInterval)
+        mockInterval = null
+    }
+    if (wss) {
+        for (const client of wss.clients) {
+            client.terminate()
+        }
+        wss.close()
+        wss = null
+    }
+}
+
 export function mockBroadcast(): void {
-    setInterval(() => {
+    mockInterval = setInterval(() => {
         const a = Math.floor(Math.random() * 101)
         const b = Math.floor(Math.random() * 101)
         const c = Math.floor(Math.random() * 101)

@@ -30,3 +30,4 @@ Thumbs.db
 client/.clj-kondo/
 client/.vscode/
 client/.lsp/
+*.zip

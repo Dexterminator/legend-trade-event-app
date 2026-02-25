@@ -2,7 +2,7 @@ import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createWsServer, mockBroadcast } from './wsServer.js'
+import { createWsServer, closeWsServer, mockBroadcast } from './wsServer.js'
 import { connectExternal, destroyExternal } from './wsExternal.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -40,6 +40,8 @@ connectExternal()
 function shutdown(signal: string): void {
     console.log(`\nReceived ${signal} — shutting down …`)
     destroyExternal()
+    closeWsServer()          // terminate WS clients + clear intervals
+    server.closeAllConnections()  // drop open keep-alive HTTP connections
     server.close(() => {
         console.log('HTTP server closed. Bye.')
         process.exit(0)
