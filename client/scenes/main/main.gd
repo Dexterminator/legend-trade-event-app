@@ -5,7 +5,7 @@ extends Node2D
 ##   • Manages the WebSocket connection to the server with exponential backoff.
 
 # ── Overlay registry ──────────────────────────────────────────────────────────
-const OVERLAYS: Dictionary = {
+const OVERLAYS: Dictionary[String, PackedScene] = {
 	"standings": preload("res://scenes/standings_overlay/standings_overlay.tscn"),
 	"score": preload("res://scenes/score_overlay/score_overlay.tscn"),
 	"ticker": preload("res://scenes/ticker_overlay/ticker_overlay.tscn"),
@@ -90,7 +90,7 @@ func _schedule_reconnect() -> void:
 
 
 func _handle_message(raw: String) -> void:
-	var data = JSON.parse_string(raw)
+	var data: Dictionary = JSON.parse_string(raw)
 	if not data is Dictionary:
 		push_warning("[Main] Unexpected message format: " + raw.left(120))
 		return
