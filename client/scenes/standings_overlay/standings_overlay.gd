@@ -5,6 +5,8 @@ extends Node2D
 var inited := false
 
 func _ready() -> void:
+	modulate.a = 0.0
+	create_tween().tween_property(self , "modulate:a", 1.0, .2)
 	SignalBus.standings_updated.connect(_on_standings_updated)
 	for i in range(standings_container.get_child_count()):
 		var p: PlayerPanel = standings_container.get_child(i)
@@ -37,8 +39,10 @@ func animate_sort(container: VBoxContainer) -> void:
 	for i in panels.size():
 		container.move_child(panels[i], i)
 
+	RenderingServer.render_loop_enabled = false
 	# 4️⃣ Wait for container to recalculate layout
 	await get_tree().process_frame
+	RenderingServer.render_loop_enabled = true
 
 	# 5️⃣ Animate from old position to new layout position
 	for p: PlayerPanel in panels:
@@ -59,8 +63,6 @@ func _on_standings_updated(_text: String) -> void:
 		return
 	for child: PlayerPanel in standings_container.get_children():
 		child.set_score(randi_range(0, 1000000))
-		if child.state == PlayerPanel.State.EXPANDED:
-			child.collapse()
 
 	await Utils.wait(self , 0.7)
 	animate_sort(standings_container)
