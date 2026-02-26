@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://du2x1v0hpinxi"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4p068"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(0, 0, 0, 0.37254903)
+
+[node name="PlayerPanel" type="PanelContainer" unique_id=275146529]
+theme_override_styles/panel = SubResource("StyleBoxFlat_4p068")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1047533924]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="HBoxContainer" unique_id=991938552]
+layout_mode = 2
+text = "Player 1"
+
+[node name="Divider" type="Label" parent="HBoxContainer" unique_id=679059525]
+layout_mode = 2
+text = "|"
+
+[node name="MoneyLabel" type="Label" parent="HBoxContainer" unique_id=907248853]
+layout_mode = 2
+text = "$100,000"
