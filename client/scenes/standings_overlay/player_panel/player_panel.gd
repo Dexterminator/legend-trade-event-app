@@ -2,8 +2,16 @@ class_name PlayerPanel
 extends PanelContainer
 
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
+@onready var name_label: Label = %NameLabel
+@onready var score_label: Label = %ScoreLabel
+
 enum State {EXPANDED, COLLAPSED}
 var state: State = State.COLLAPSED
+var score: int = 0
+
+func set_score(new_score: int) -> void:
+    score = new_score
+    score_label.text = "$%s" % Utils.format_number(score)
 
 func toggle_expanded() -> void:
     if animation_player.is_playing():
