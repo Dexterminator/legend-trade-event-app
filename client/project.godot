@@ -30,5 +30,4 @@ window/per_pixel_transparency/allowed=true
 
 [rendering]
 
-viewport/transparent_background=true
 environment/default_clear_color=Color(0, 0, 0, 0)

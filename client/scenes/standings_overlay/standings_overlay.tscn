@@ -2,45 +2,67 @@
 
 [ext_resource type="Script" uid="uid://c3udkhtkxrs58" path="res://scenes/standings_overlay/standings_overlay.gd" id="1_ecs45"]
 [ext_resource type="Theme" uid="uid://mdn7ofcnq8dn" path="res://assets/theme.tres" id="2_ldnha"]
+[ext_resource type="PackedScene" uid="uid://du2x1v0hpinxi" path="res://scenes/standings_overlay/player_panel/player_panel.tscn" id="3_twirp"]
 
-[sub_resource type="Curve" id="Curve_ldnha"]
-_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.33928573, 1), 0.007439866, 0.007439866, 0, 0, Vector2(0.7168367, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
-point_count = 4
-
-[sub_resource type="Gradient" id="Gradient_ldnha"]
-colors = PackedColorArray(0, 0.3476059, 0.73542976, 1, 1, 1, 1, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_twirp"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 0, 0, 0.78431374)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
 
 [node name="StandingsOverlay" type="Node2D" unique_id=1265137379]
 script = ExtResource("1_ecs45")
 
-[node name="Control" type="Control" parent="." unique_id=1168650952]
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1020999124]
+offset_left = 99.0
+offset_top = 95.0
+offset_right = 426.0
+offset_bottom = 760.0
 theme = ExtResource("2_ldnha")
+theme_override_constants/separation = 10
 
-[node name="Label" type="Label" parent="Control" unique_id=1870406394]
-layout_mode = 0
-offset_left = 794.0
-offset_top = 243.0
-offset_right = 920.0
-offset_bottom = 410.0
-theme_override_font_sizes/font_size = 128
+[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer" unique_id=1548412633]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_twirp")
 
-[node name="CPUParticles2D" type="CPUParticles2D" parent="." unique_id=522469242]
-position = Vector2(902, 439)
-emitting = false
-amount = 20
-lifetime = 1.4000000000000001
-one_shot = true
-speed_scale = 1.2
-explosiveness = 0.8
-direction = Vector2(0, -1)
-initial_velocity_min = 200.0
-initial_velocity_max = 800.0
-scale_amount_min = 0.5
-scale_amount_max = 30.0
-scale_amount_curve = SubResource("Curve_ldnha")
-color = Color(0.94643027, 0.00076508644, 0.951647, 1)
-color_ramp = SubResource("Gradient_ldnha")
+[node name="Label" type="Label" parent="VBoxContainer/PanelContainer" unique_id=711783634]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "ROUND 1"
+horizontal_alignment = 1
+
+[node name="StandingsContainer" type="VBoxContainer" parent="VBoxContainer" unique_id=1844736037]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PlayerPanel" parent="VBoxContainer/StandingsContainer" unique_id=275146529 instance=ExtResource("3_twirp")]
+layout_mode = 2
+
+[node name="PlayerPanel2" parent="VBoxContainer/StandingsContainer" unique_id=651528397 instance=ExtResource("3_twirp")]
+layout_mode = 2
+
+[node name="PlayerPanel3" parent="VBoxContainer/StandingsContainer" unique_id=957386731 instance=ExtResource("3_twirp")]
+layout_mode = 2
+
+[node name="PlayerPanel4" parent="VBoxContainer/StandingsContainer" unique_id=1517759141 instance=ExtResource("3_twirp")]
+layout_mode = 2
+
+[node name="PlayerPanel5" parent="VBoxContainer/StandingsContainer" unique_id=855229688 instance=ExtResource("3_twirp")]
+layout_mode = 2
+
+[node name="PlayerPanel6" parent="VBoxContainer/StandingsContainer" unique_id=798978705 instance=ExtResource("3_twirp")]
+layout_mode = 2
+
+[node name="PlayerPanel7" parent="VBoxContainer/StandingsContainer" unique_id=95650151 instance=ExtResource("3_twirp")]
+layout_mode = 2
+
+[node name="PlayerPanel8" parent="VBoxContainer/StandingsContainer" unique_id=751928987 instance=ExtResource("3_twirp")]
+layout_mode = 2
+
+[editable path="VBoxContainer/StandingsContainer/PlayerPanel4"]
