@@ -106,6 +106,10 @@ _data = {
 
 [node name="PlayerPanel" type="PanelContainer" unique_id=275146529]
 clip_contents = true
+offset_right = 327.0
+offset_bottom = 65.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_4p068")
 script = ExtResource("1_8msps")
 
