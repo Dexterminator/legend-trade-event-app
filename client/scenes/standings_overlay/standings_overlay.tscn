@@ -64,5 +64,3 @@ layout_mode = 2
 
 [node name="PlayerPanel8" parent="VBoxContainer/StandingsContainer" unique_id=751928987 instance=ExtResource("3_twirp")]
 layout_mode = 2
-
-[editable path="VBoxContainer/StandingsContainer/PlayerPanel4"]

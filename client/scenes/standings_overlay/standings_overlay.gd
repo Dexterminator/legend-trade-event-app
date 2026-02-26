@@ -1,12 +1,13 @@
 extends Node2D
 
 @onready var standings_container: VBoxContainer = %StandingsContainer
+@onready var panels_by_player_index: Array = standings_container.get_children()
+var inited := false
 
 func _ready() -> void:
 	SignalBus.standings_updated.connect(_on_standings_updated)
 	for i in range(standings_container.get_child_count()):
 		var p: PlayerPanel = standings_container.get_child(i)
-		print(p)
 		p.name_label.text = "Player %d" % (i + 1)
 
 func sort_by_score() -> void:
@@ -20,6 +21,9 @@ func sort_by_score() -> void:
 		standings_container.move_child(panels[i], i)
 
 func _on_standings_updated(_text: String) -> void:
+	if not inited:
+		inited = true
+		return
 	for child: PlayerPanel in standings_container.get_children():
 		child.set_score(randi_range(0, 1000000))
 
@@ -31,5 +35,5 @@ func _input(event: InputEvent) -> void:
 		if key_event.pressed:
 			var key_index := key_event.keycode - KEY_1
 			if 0 <= key_index and key_index <= 7:
-				var child: PlayerPanel = standings_container.get_child(key_index)
+				var child: PlayerPanel = panels_by_player_index[key_index]
 				child.toggle_expanded()
