@@ -11,6 +11,8 @@ func _ready() -> void:
 	for i in range(standings_container.get_child_count()):
 		var p: PlayerPanel = standings_container.get_child(i)
 		p.name_label.text = "Player %d" % (i + 1)
+		p.set_score(randi_range(0, 1000000))
+	_set_placements()
 
 func sort_by_score() -> void:
 	var panels := standings_container.get_children()
@@ -21,6 +23,12 @@ func sort_by_score() -> void:
 
 	for i in panels.size():
 		standings_container.move_child(panels[i], i)
+
+func _set_placements() -> void:
+	var panels := standings_container.get_children()
+	for i in panels.size():
+		var panel: PlayerPanel = panels[i]
+		panel.placement_label.text = "%d" % (i + 1)
 
 func animate_sort(container: VBoxContainer) -> void:
 	var panels := container.get_children()
@@ -44,6 +52,7 @@ func animate_sort(container: VBoxContainer) -> void:
 	await get_tree().process_frame
 	RenderingServer.render_loop_enabled = true
 
+	var animation_time := 1.0
 	# 5️⃣ Animate from old position to new layout position
 	for p: PlayerPanel in panels:
 		var new_y: float = p.position.y
@@ -53,9 +62,37 @@ func animate_sort(container: VBoxContainer) -> void:
 			p,
 			"position:y",
 			new_y,
-			1.0
+			animation_time
 		).set_trans(Tween.TRANS_CUBIC) \
 		 .set_ease(Tween.EASE_IN_OUT)
+
+	# 6️⃣ If placement is different, animate the placement label
+	await Utils.wait(self , animation_time * 0.1)
+	for i in panels.size():
+		var panel: PlayerPanel = panels[i]
+		var new_placement: String = "%d" % (i + 1)
+		if panel.placement_label.text != new_placement:
+			# Fade out old placement
+			var t := create_tween()
+			t.tween_property(
+				panel.placement_label,
+				"modulate:a",
+				0.0,
+				0.5
+			).set_trans(Tween.TRANS_CUBIC) \
+			 .set_ease(Tween.EASE_IN_OUT)
+			# After fade out, update text and fade in new placement
+			t.tween_callback(func() -> void:
+				panel.placement_label.text = new_placement)
+			# Fade in new placement
+			t.tween_property(
+				panel.placement_label,
+				"modulate:a",
+				1.0,
+				0.5
+			).set_trans(Tween.TRANS_CUBIC) \
+			 .set_ease(Tween.EASE_IN_OUT)
+
 
 func _on_standings_updated(_text: String) -> void:
 	if not inited:

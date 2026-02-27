@@ -1,12 +1,15 @@
 [gd_scene format=3 uid="uid://du2x1v0hpinxi"]
 
 [ext_resource type="Script" uid="uid://cl8pouem7yhnn" path="res://scenes/standings_overlay/player_panel/player_panel.gd" id="1_8msps"]
+[ext_resource type="Theme" uid="uid://mdn7ofcnq8dn" path="res://assets/theme.tres" id="1_bxhcd"]
 [ext_resource type="Texture2D" uid="uid://dlun3mo22x028" path="res://assets/placeholder.png" id="1_rask7"]
+[ext_resource type="FontFile" uid="uid://dvpky2gy5ft1v" path="res://assets/Geist/static/Geist-Black.ttf" id="2_l0tbx"]
+[ext_resource type="FontFile" uid="uid://dpiudhqygu672" path="res://assets/Geist/static/Geist-Medium.ttf" id="3_bxhcd"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4p068"]
-content_margin_left = 20.0
+content_margin_left = 30.0
 content_margin_top = 10.0
-content_margin_right = 20.0
+content_margin_right = 30.0
 content_margin_bottom = 10.0
 bg_color = Color(0, 0, 0, 0.78431374)
 corner_radius_top_left = 5
@@ -104,12 +107,26 @@ _data = {
 &"expand": SubResource("Animation_4p068")
 }
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8msps"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_8msps"]
+color = Color(1, 1, 1, 1)
+grow_begin = -5.0
+grow_end = -5.0
+vertical = true
+
 [node name="PlayerPanel" type="PanelContainer" unique_id=275146529]
 clip_contents = true
 offset_right = 327.0
 offset_bottom = 65.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme = ExtResource("1_bxhcd")
 theme_override_styles/panel = SubResource("StyleBoxFlat_4p068")
 script = ExtResource("1_8msps")
 
@@ -119,21 +136,51 @@ libraries/ = SubResource("AnimationLibrary_rask7")
 [node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1047533924]
 layout_mode = 2
 size_flags_vertical = 0
+theme_override_constants/separation = 17
+
+[node name="AspectRatioContainer" type="AspectRatioContainer" parent="HBoxContainer" unique_id=1113648853]
+layout_mode = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="HBoxContainer/AspectRatioContainer" unique_id=1946056975]
+custom_minimum_size = Vector2(35, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_8msps")
+
+[node name="PlacementLabel" type="Label" parent="HBoxContainer/AspectRatioContainer/PanelContainer" unique_id=75631962]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.31246608, 0.31246608, 0.31246608, 1)
+theme_override_fonts/font = ExtResource("2_l0tbx")
+theme_override_font_sizes/font_size = 26
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Spacer" type="Control" parent="HBoxContainer" unique_id=1730196182]
+layout_mode = 2
 
 [node name="NameLabel" type="Label" parent="HBoxContainer" unique_id=991938552]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_bxhcd")
 theme_override_font_sizes/font_size = 32
 text = "Player 1"
 
+[node name="Panel" type="Panel" parent="HBoxContainer" unique_id=1777763091]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxLine_8msps")
+
 [node name="Divider" type="Label" parent="HBoxContainer" unique_id=679059525]
+visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "|"
 
 [node name="ScoreLabel" type="Label" parent="HBoxContainer" unique_id=907248853]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_bxhcd")
 theme_override_font_sizes/font_size = 32
 text = "$100,000"
 

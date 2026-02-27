@@ -4,6 +4,7 @@ extends PanelContainer
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var name_label: Label = %NameLabel
 @onready var score_label: Label = %ScoreLabel
+@onready var placement_label: Label = %PlacementLabel
 
 enum State {EXPANDED, COLLAPSED}
 var state: State = State.COLLAPSED
