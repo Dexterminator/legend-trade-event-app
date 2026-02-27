@@ -62,7 +62,8 @@ func _on_standings_updated(_text: String) -> void:
 		inited = true
 		return
 	for child: PlayerPanel in standings_container.get_children():
-		child.set_score(randi_range(0, 1000000))
+		if randf() < 0.15:
+			child.set_score(randi_range(0, 1000000))
 
 	await Utils.wait(self , 0.7)
 	animate_sort(standings_container)
