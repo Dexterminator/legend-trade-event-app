@@ -75,25 +75,15 @@ func animate_sort(container: VBoxContainer) -> void:
 		if panel.placement_label.text != new_placement:
 			# Fade out old placement
 			var t := create_tween()
-			t.tween_property(
-				panel.placement_label,
-				"modulate:a",
-				0.0,
-				0.5
+			t.tween_property(panel.placement_label, "modulate:a", 0.0, 0.4
 			).set_trans(Tween.TRANS_CUBIC) \
 			 .set_ease(Tween.EASE_IN_OUT)
 			# After fade out, update text and fade in new placement
-			t.tween_callback(func() -> void:
-				panel.placement_label.text = new_placement)
+			t.tween_callback(func() -> void: panel.placement_label.text = new_placement)
 			# Fade in new placement
-			t.tween_property(
-				panel.placement_label,
-				"modulate:a",
-				1.0,
-				0.5
+			t.tween_property(panel.placement_label, "modulate:a", 1.0, 0.4
 			).set_trans(Tween.TRANS_CUBIC) \
 			 .set_ease(Tween.EASE_IN_OUT)
-
 
 func _on_standings_updated(_text: String) -> void:
 	if not inited:
