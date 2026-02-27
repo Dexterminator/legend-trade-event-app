@@ -6,7 +6,8 @@ var inited := false
 
 func _ready() -> void:
 	modulate.a = 0.0
-	create_tween().tween_property(self , "modulate:a", 1.0, .2)
+	var t := create_tween()
+	t.tween_property(self , "modulate:a", 1.0, .3).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
 	SignalBus.standings_updated.connect(_on_standings_updated)
 	for i in range(standings_container.get_child_count()):
 		var p: PlayerPanel = standings_container.get_child(i)

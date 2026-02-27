@@ -186,6 +186,6 @@ text = "$100,000"
 
 [node name="PlayerPicture" type="Sprite2D" parent="." unique_id=1828077865]
 modulate = Color(1, 1, 1, 0)
-position = Vector2(166, 161)
+position = Vector2(230.00002, 161)
 scale = Vector2(0.3, 0.3)
 texture = ExtResource("1_rask7")
