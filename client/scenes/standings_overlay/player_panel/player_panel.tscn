@@ -108,7 +108,7 @@ _data = {
 }
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8msps"]
-bg_color = Color(1, 1, 1, 1)
+bg_color = Color(0.21410304, 0.21410304, 0.21410301, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
@@ -149,7 +149,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_8msps")
 [node name="PlacementLabel" type="Label" parent="HBoxContainer/AspectRatioContainer/PanelContainer" unique_id=75631962]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.31246608, 0.31246608, 0.31246608, 1)
+theme_override_colors/font_color = Color(1, 0.6392157, 0.09411765, 1)
 theme_override_fonts/font = ExtResource("2_l0tbx")
 theme_override_font_sizes/font_size = 26
 text = "1"

@@ -71,19 +71,26 @@ func animate_sort(container: VBoxContainer) -> void:
 	await Utils.wait(self , animation_time * 0.1)
 	for i in panels.size():
 		var panel: PlayerPanel = panels[i]
-		var new_placement: String = "%d" % (i + 1)
-		if panel.placement_label.text != new_placement:
+		var new_placement: int = i + 1
+		var prev_placement: int = int(panel.placement_label.text)
+		if prev_placement != new_placement:
+			if new_placement < prev_placement:
+				panel.z_index = 1
+			else:
+				panel.z_index = -1
 			# Fade out old placement
 			var t := create_tween()
 			t.tween_property(panel.placement_label, "modulate:a", 0.0, 0.4
 			).set_trans(Tween.TRANS_CUBIC) \
 			 .set_ease(Tween.EASE_IN_OUT)
 			# After fade out, update text and fade in new placement
-			t.tween_callback(func() -> void: panel.placement_label.text = new_placement)
+			t.tween_callback(func() -> void: panel.placement_label.text = str(new_placement))
 			# Fade in new placement
 			t.tween_property(panel.placement_label, "modulate:a", 1.0, 0.4
 			).set_trans(Tween.TRANS_CUBIC) \
 			 .set_ease(Tween.EASE_IN_OUT)
+		else:
+			panel.z_index = 0
 
 func _on_standings_updated(_text: String) -> void:
 	if not inited:
