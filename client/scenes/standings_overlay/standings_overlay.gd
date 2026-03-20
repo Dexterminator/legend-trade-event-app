@@ -3,6 +3,7 @@ extends Node2D
 @onready var standings_container: VBoxContainer = %StandingsContainer
 @onready var panels_by_player_index: Array = standings_container.get_children()
 var inited := false
+var sorting := false
 
 func _ready() -> void:
 	modulate.a = 0.0
@@ -11,7 +12,7 @@ func _ready() -> void:
 	SignalBus.standings_updated.connect(_on_standings_updated)
 	for i in range(standings_container.get_child_count()):
 		var p: PlayerPanel = standings_container.get_child(i)
-		p.name_label.text = "Player %d" % (i + 1)
+		p.name_label.text = "PLAYER %d" % (i + 1)
 		p.set_score(randi_range(0, 1000000))
 	_set_placements()
 
@@ -96,17 +97,21 @@ func _on_standings_updated(_text: String) -> void:
 	if not inited:
 		inited = true
 		return
+	sorting = true
 	for child: PlayerPanel in standings_container.get_children():
 		if randf() < 0.15:
 			child.set_score(randi_range(0, 1000000))
 
+	# TODO Only animate if placements changed
 	await Utils.wait(self , 0.7)
 	animate_sort(standings_container)
+	await Utils.wait(self , 1.0)
+	sorting = false
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey:
 		var key_event := event as InputEventKey
-		if key_event.pressed:
+		if key_event.pressed and not sorting:
 			var key_index := key_event.keycode - KEY_1
 			if 0 <= key_index and key_index <= 7:
 				var child: PlayerPanel = panels_by_player_index[key_index]

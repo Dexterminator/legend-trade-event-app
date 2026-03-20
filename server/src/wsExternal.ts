@@ -1,12 +1,28 @@
 import { WebSocket } from 'ws'
-import { state, updateState } from './state.js'
 import { broadcast } from './wsServer.js'
 
-// Override via environment variable: EXTERNAL_WS_URL=ws://data-feed:9090
-const EXTERNAL_WS_URL = process.env['EXTERNAL_WS_URL'] ?? 'ws://localhost:9090'
+const HYPERLIQUID_WS_URL = 'wss://api.hyperliquid.xyz/ws'
 
 const BASE_DELAY_MS = 1_000
 const MAX_DELAY_MS = 30_000
+
+// Subscriptions used in legend.trade
+// allMids
+// openOrders
+// allDexsClearinghouseState
+// spotState
+
+
+export const USER_ADDRESSES: string[] = [
+    '0xf6e4e49d2786fb5c284094e39eaac62db263af81', // https://app.legend.trade/users/ryoh
+    // '0x0000000000000000000000000000000000000002',
+    // '0x0000000000000000000000000000000000000003',
+    // '0x0000000000000000000000000000000000000004',
+    // '0x0000000000000000000000000000000000000005',
+    // '0x0000000000000000000000000000000000000006',
+    // '0x0000000000000000000000000000000000000007',
+    // '0x0000000000000000000000000000000000000008',
+]
 
 let socket: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -18,43 +34,41 @@ let destroyed = false
 export function connectExternal(): void {
     if (destroyed) return
 
-    console.log(`[external ws] connecting to ${EXTERNAL_WS_URL} …`)
-    socket = new WebSocket(EXTERNAL_WS_URL)
+    console.log(`[hl ws] connecting to ${HYPERLIQUID_WS_URL} …`)
+    socket = new WebSocket(HYPERLIQUID_WS_URL)
 
     socket.on('open', () => {
-        console.log('[external ws] connected')
+        console.log(`[hl ws] connected — subscribing to ${USER_ADDRESSES.length} users`)
         attempt = 0
+
+        for (const user of USER_ADDRESSES) {
+            socket!.send(JSON.stringify({
+                method: 'subscribe',
+                subscription: { type: 'user', user },
+            }))
+        }
     })
 
     socket.on('message', (raw) => {
         try {
             const msg: unknown = JSON.parse(raw.toString())
             if (typeof msg !== 'object' || msg === null) return
+            console.log(JSON.stringify(msg, null, 2))
 
-            const m = msg as Record<string, unknown>
-            const partial: Partial<typeof state> = {}
-
-            if (typeof m['standings'] === 'string') partial.standings = m['standings']
-            if (typeof m['score'] === 'string') partial.score = m['score']
-            if (typeof m['ticker'] === 'string') partial.ticker = m['ticker']
-
-            if (Object.keys(partial).length > 0) {
-                updateState(partial)
-                broadcast({ type: 'state_update', payload: { ...state } })
-            }
+            broadcast({ type: 'hl_user_update', payload: msg })
         } catch {
-            console.warn('[external ws] unparseable message:', raw.toString().slice(0, 120))
+            console.warn('[hl ws] unparseable message:', raw.toString().slice(0, 120))
         }
     })
 
     socket.on('close', (code, reason) => {
-        console.log(`[external ws] closed (${code} ${reason.toString()})`)
+        console.log(`[hl ws] closed (${code} ${reason.toString()})`)
         scheduleReconnect()
     })
 
     socket.on('error', (err) => {
         // 'close' fires after 'error', so reconnect is triggered there
-        console.error('[external ws] error:', err.message)
+        console.error('[hl ws] error:', err.message)
     })
 }
 
@@ -72,6 +86,6 @@ function scheduleReconnect(): void {
     // Exponential backoff: 1s, 2s, 4s, 8s … capped at 30s
     const delay = Math.min(BASE_DELAY_MS * 2 ** attempt, MAX_DELAY_MS)
     attempt++
-    console.log(`[external ws] reconnecting in ${delay}ms (attempt ${attempt})`)
+    console.log(`[hl ws] reconnecting in ${delay}ms (attempt ${attempt})`)
     reconnectTimer = setTimeout(connectExternal, delay)
 }
