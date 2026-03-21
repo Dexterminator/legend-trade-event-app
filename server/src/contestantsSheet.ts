@@ -1,4 +1,5 @@
 import { setContestants, type Contestant } from './state.js'
+import { syncExternalSubscriptions } from './wsExternal.js'
 
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1gTpwDkZEItMLKznGBi7-YsXeObdxlvum9LulqSFJ01M/export?format=csv&gid=0'
 const POLL_INTERVAL_MS = 5_000
@@ -60,6 +61,7 @@ async function pollOnce(): Promise<void> {
         }
 
         setContestants(contestantsByWallet)
+        syncExternalSubscriptions()
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         console.error('[contestants] sheet poll failed:', message)

@@ -55,3 +55,13 @@ export function setContestants(contestantsByWallet: Record<string, Contestant>):
         }
     }
 }
+
+export function getContestantWalletAddresses(): string[] {
+    const wallets: string[] = []
+    for (const [wallet, userState] of Object.entries(state.users)) {
+        if (userState.contestant) {
+            wallets.push(wallet)
+        }
+    }
+    return wallets
+}

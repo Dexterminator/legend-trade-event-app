@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws'
-import { setUserPayload } from './state.js'
+import { getContestantWalletAddresses, setUserPayload } from './state.js'
 
 const HYPERLIQUID_WS_URL = 'wss://api.hyperliquid.xyz/ws'
 
@@ -12,21 +12,10 @@ const MAX_DELAY_MS = 30_000
 // allDexsClearinghouseState
 // spotState
 
-
-export const USER_ADDRESSES: string[] = [
-    '0xf6e4e49d2786fb5c284094e39eaac62db263af81', // https://app.legend.trade/users/ryoh
-    // '0x0000000000000000000000000000000000000002',
-    // '0x0000000000000000000000000000000000000003',
-    // '0x0000000000000000000000000000000000000004',
-    // '0x0000000000000000000000000000000000000005',
-    // '0x0000000000000000000000000000000000000006',
-    // '0x0000000000000000000000000000000000000007',
-    // '0x0000000000000000000000000000000000000008',
-]
-
 let socket: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let attempt = 0
+const subscribedUsers = new Set<string>()
 let destroyed = false
 
 // ── Public API ─────────────────────────────────────────────────────────────────
@@ -43,17 +32,8 @@ export function connectExternal(): void {
 
     socket.on('open', () => {
         attempt = 0
-        console.log(`[hl ws] connected — subscribing to allDexsClearinghouseState for ${USER_ADDRESSES.length} users`)
-
-        for (const user of USER_ADDRESSES) {
-            socket!.send(JSON.stringify({
-                method: 'subscribe',
-                subscription: {
-                    type: 'allDexsClearinghouseState',
-                    user: user.toLowerCase(),
-                },
-            }))
-        }
+        subscribedUsers.clear()
+        syncExternalSubscriptions()
     })
 
     socket.on('message', (raw) => {
@@ -77,6 +57,7 @@ export function connectExternal(): void {
     socket.on('close', (code, reason) => {
         console.log(`[hl ws] closed (${code} ${reason.toString()})`)
         socket = null
+        subscribedUsers.clear()
         scheduleReconnect()
     })
 
@@ -94,6 +75,39 @@ export function destroyExternal(): void {
     }
     socket?.terminate()
     socket = null
+    subscribedUsers.clear()
+}
+
+export function syncExternalSubscriptions(): void {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return
+
+    const desiredUsers = new Set(getContestantWalletAddresses())
+
+    for (const user of desiredUsers) {
+        if (subscribedUsers.has(user)) continue
+        socket.send(JSON.stringify({
+            method: 'subscribe',
+            subscription: {
+                type: 'allDexsClearinghouseState',
+                user,
+            },
+        }))
+        subscribedUsers.add(user)
+    }
+
+    for (const user of [...subscribedUsers]) {
+        if (desiredUsers.has(user)) continue
+        socket.send(JSON.stringify({
+            method: 'unsubscribe',
+            subscription: {
+                type: 'allDexsClearinghouseState',
+                user,
+            },
+        }))
+        subscribedUsers.delete(user)
+    }
+
+    console.log(`[hl ws] synced subscriptions for ${desiredUsers.size} users from sheet`)
 }
 
 // ── Internal ───────────────────────────────────────────────────────────────────
