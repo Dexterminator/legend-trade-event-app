@@ -87,12 +87,16 @@ export function startStateBroadcast(): void {
     }
 
     stateInterval = setInterval(() => {
-        // console.log({ ...state })
+        for (const userState of Object.values(state.users)) {
+            if (userState.contestant) {
+                console.log(userState.contestant)
+            }
+        }
         broadcast({
             type: 'state_update',
             payload: { ...state },
         })
-    }, 250)
+    }, 1000)
 }
 
 /**

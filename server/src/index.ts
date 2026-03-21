@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createWsServer, closeWsServer, startStateBroadcast, mockBroadcast } from './wsServer.js'
 import { connectExternal, destroyExternal } from './wsExternal.js'
-import { mock } from 'node:test'
+import { startContestantsSheetPolling, stopContestantsSheetPolling } from './contestantsSheet.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -37,11 +37,13 @@ server.listen(PORT, () => {
 
 // ── External data feed ────────────────────────────────────────────────────────
 connectExternal()
+startContestantsSheetPolling()
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
 function shutdown(signal: string): void {
     console.log(`\nReceived ${signal} — shutting down …`)
     destroyExternal()
+    stopContestantsSheetPolling()
     closeWsServer()          // terminate WS clients + clear intervals
     server.closeAllConnections()  // drop open keep-alive HTTP connections
     server.close(() => {
