@@ -99,12 +99,15 @@ func _handle_message(raw: String) -> void:
 	var payload: Dictionary = data.get("payload", {})
 
 	match msg_type:
-		"initial_state", "state_update":
+		"initial_state", "mock_state_update":
 			if payload.has("standings"):
 				SignalBus.standings_updated.emit(str(payload["standings"]))
 			if payload.has("score"):
 				SignalBus.score_updated.emit(str(payload["score"]))
 			if payload.has("ticker"):
 				SignalBus.ticker_updated.emit(str(payload["ticker"]))
+		"state_update":
+			pass
+			# print(str(payload))
 		_:
 			push_warning("[Main] Unknown message type: " + msg_type)

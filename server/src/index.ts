@@ -2,8 +2,9 @@ import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createWsServer, closeWsServer, mockBroadcast } from './wsServer.js'
+import { createWsServer, closeWsServer, startStateBroadcast, mockBroadcast } from './wsServer.js'
 import { connectExternal, destroyExternal } from './wsExternal.js'
+import { mock } from 'node:test'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -27,6 +28,7 @@ app.get('*', (_req, res) => {
 // ── HTTP + WebSocket server ────────────────────────────────────────────────────
 const server = createServer(app)
 createWsServer(server)
+startStateBroadcast()
 mockBroadcast()
 
 server.listen(PORT, () => {

@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws'
-import { broadcast } from './wsServer.js'
+import { setUserPayload } from './state.js'
 
 const HYPERLIQUID_WS_URL = 'wss://api.hyperliquid.xyz/ws'
 
@@ -34,17 +34,24 @@ let destroyed = false
 export function connectExternal(): void {
     if (destroyed) return
 
+    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        return
+    }
+
     console.log(`[hl ws] connecting to ${HYPERLIQUID_WS_URL} …`)
     socket = new WebSocket(HYPERLIQUID_WS_URL)
 
     socket.on('open', () => {
-        console.log(`[hl ws] connected — subscribing to ${USER_ADDRESSES.length} users`)
         attempt = 0
+        console.log(`[hl ws] connected — subscribing to allDexsClearinghouseState for ${USER_ADDRESSES.length} users`)
 
         for (const user of USER_ADDRESSES) {
             socket!.send(JSON.stringify({
                 method: 'subscribe',
-                subscription: { type: 'user', user },
+                subscription: {
+                    type: 'allDexsClearinghouseState',
+                    user: user.toLowerCase(),
+                },
             }))
         }
     })
@@ -53,9 +60,15 @@ export function connectExternal(): void {
         try {
             const msg: unknown = JSON.parse(raw.toString())
             if (typeof msg !== 'object' || msg === null) return
-            console.log(JSON.stringify(msg, null, 2))
 
-            broadcast({ type: 'hl_user_update', payload: msg })
+            const data = (msg as Record<string, unknown>)['data']
+            const user = (data as Record<string, unknown> | undefined)?.['user']
+            if (typeof user !== 'string' || user.length === 0) {
+                console.warn('[hl ws] message missing data.user')
+                return
+            }
+
+            setUserPayload(user, msg)
         } catch {
             console.warn('[hl ws] unparseable message:', raw.toString().slice(0, 120))
         }
@@ -63,18 +76,22 @@ export function connectExternal(): void {
 
     socket.on('close', (code, reason) => {
         console.log(`[hl ws] closed (${code} ${reason.toString()})`)
+        socket = null
         scheduleReconnect()
     })
 
     socket.on('error', (err) => {
-        // 'close' fires after 'error', so reconnect is triggered there
+        // 'close' fires after 'error', so reconnect is triggered there.
         console.error('[hl ws] error:', err.message)
     })
 }
 
 export function destroyExternal(): void {
     destroyed = true
-    if (reconnectTimer !== null) clearTimeout(reconnectTimer)
+    if (reconnectTimer !== null) {
+        clearTimeout(reconnectTimer)
+        reconnectTimer = null
+    }
     socket?.terminate()
     socket = null
 }
@@ -83,9 +100,17 @@ export function destroyExternal(): void {
 
 function scheduleReconnect(): void {
     if (destroyed) return
+
+    if (reconnectTimer !== null) {
+        clearTimeout(reconnectTimer)
+    }
+
     // Exponential backoff: 1s, 2s, 4s, 8s … capped at 30s
     const delay = Math.min(BASE_DELAY_MS * 2 ** attempt, MAX_DELAY_MS)
     attempt++
     console.log(`[hl ws] reconnecting in ${delay}ms (attempt ${attempt})`)
-    reconnectTimer = setTimeout(connectExternal, delay)
+    reconnectTimer = setTimeout(() => {
+        reconnectTimer = null
+        connectExternal()
+    }, delay)
 }

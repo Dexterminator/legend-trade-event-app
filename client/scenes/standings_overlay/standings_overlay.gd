@@ -12,7 +12,7 @@ func _ready() -> void:
 	SignalBus.standings_updated.connect(_on_standings_updated)
 	for i in range(standings_container.get_child_count()):
 		var p: PlayerPanel = standings_container.get_child(i)
-		p.name_label.text = "PLAYER %d" % (i + 1)
+		p.name_label.text = "JOHN NUMBERS %d" % (i + 1)
 		p.set_score(randi_range(0, 1000000))
 	_set_placements()
 

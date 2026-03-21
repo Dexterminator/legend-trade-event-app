@@ -4,6 +4,7 @@ import { state } from './state.js'
 
 let wss: WebSocketServer | null = null
 let mockInterval: ReturnType<typeof setInterval> | null = null
+let stateInterval: ReturnType<typeof setInterval> | null = null
 
 export function createWsServer(server: Server): WebSocketServer {
     wss = new WebSocketServer({ server, path: '/ws' })
@@ -33,6 +34,10 @@ export function closeWsServer(): void {
         clearInterval(mockInterval)
         mockInterval = null
     }
+    if (stateInterval !== null) {
+        clearInterval(stateInterval)
+        stateInterval = null
+    }
     if (wss) {
         for (const client of wss.clients) {
             client.terminate()
@@ -43,6 +48,10 @@ export function closeWsServer(): void {
 }
 
 export function mockBroadcast(): void {
+    if (mockInterval !== null) {
+        clearInterval(mockInterval)
+    }
+
     mockInterval = setInterval(() => {
         const a = Math.floor(Math.random() * 101)
         const b = Math.floor(Math.random() * 101)
@@ -62,14 +71,28 @@ export function mockBroadcast(): void {
         const ticker = `${tickerMessages[Math.floor(Math.random() * tickerMessages.length)]} #${Math.floor(Math.random() * 1000)}`
 
         broadcast({
-            type: 'state_update',
+            type: 'mock_state_update',
             payload: {
                 standings: `A: ${a}\nB: ${b}\nC: ${c}`,
                 score: `A ${scoreA} - ${scoreB} B`,
-                ticker
-            }
+                ticker,
+            },
         })
     }, 3000)
+}
+
+export function startStateBroadcast(): void {
+    if (stateInterval !== null) {
+        clearInterval(stateInterval)
+    }
+
+    stateInterval = setInterval(() => {
+        // console.log({ ...state })
+        broadcast({
+            type: 'state_update',
+            payload: { ...state },
+        })
+    }, 250)
 }
 
 /**
