@@ -36,6 +36,7 @@ export interface LeaderboardTrader {
     username: string
     avatar_url: string
     country_code: string
+    is_eliminated: boolean
     rank: number
     rank_delta: number
     pnl_usd: number
@@ -143,6 +144,20 @@ export function patchConnectionState(partial: Partial<ConnectionState>): void {
     }
 }
 
+export function setTraderEliminated(userId: string, isEliminated: boolean): void {
+    const leaderboard = state.competition.leaderboard
+    if (leaderboard === null) {
+        return
+    }
+
+    state.competition.leaderboard = {
+        ...leaderboard,
+        traders: leaderboard.traders.map((trader) => trader.user_id === userId
+            ? { ...trader, is_eliminated: isEliminated }
+            : trader),
+    }
+}
+
 export function applyCompetitionEnvelope(envelope: CompetitionEnvelope): void {
     const receivedAt = new Date().toISOString()
 
@@ -161,7 +176,11 @@ export function applyCompetitionEnvelope(envelope: CompetitionEnvelope): void {
             return
 
         case 'leaderboard':
-            state.competition.leaderboard = envelope.data
+            state.competition.leaderboard = {
+                ...envelope.data,
+                traders: withManualTraderFields(envelope.data.traders, state.competition.leaderboard?.traders)
+                    .sort((left, right) => left.user_id.localeCompare(right.user_id)),
+            }
             return
 
         case 'pnl':
@@ -175,6 +194,15 @@ export function applyCompetitionEnvelope(envelope: CompetitionEnvelope): void {
                 : mergeLatestTickIntoPnl(state.competition.pnl, envelope.data)
             return
     }
+}
+
+function withManualTraderFields(nextTraders: LeaderboardTrader[], previousTraders: LeaderboardTrader[] | undefined): LeaderboardTrader[] {
+    const eliminatedByUserId = new Map(previousTraders?.map((trader) => [trader.user_id, trader.is_eliminated]) ?? [])
+
+    return nextTraders.map((trader) => ({
+        ...trader,
+        is_eliminated: eliminatedByUserId.get(trader.user_id) ?? false,
+    }))
 }
 
 function appendActivityItem(activity: ActivityItem[], nextItem: ActivityItem): ActivityItem[] {

@@ -2,7 +2,7 @@ import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { state } from './state.js'
+import { setTraderEliminated, state } from './state.js'
 import { createWsServer, closeWsServer, startStateBroadcast } from './wsServer.js'
 import { connectExternal, destroyExternal } from './wsExternal.js'
 
@@ -17,8 +17,30 @@ const PUBLIC_DIR = path.resolve(__dirname, '..', 'public')
 const app = express()
 app.use(express.json())
 
+app.get('/admin', (_req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, 'admin.html'))
+})
+
 app.get('/debug/state', (_req, res) => {
     res.json(state)
+})
+
+app.post('/admin/traders/:userId/elimination', (req, res) => {
+    const userId = req.params['userId']
+    const isEliminated = req.body?.['is_eliminated']
+
+    if (typeof userId !== 'string' || userId.length === 0) {
+        res.status(400).json({ error: 'invalid userId' })
+        return
+    }
+
+    if (typeof isEliminated !== 'boolean') {
+        res.status(400).json({ error: 'is_eliminated must be a boolean' })
+        return
+    }
+
+    setTraderEliminated(userId, isEliminated)
+    res.status(204).end()
 })
 
 // Serve Godot web export static files

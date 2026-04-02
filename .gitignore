@@ -1,7 +1,7 @@
 # Node
 node_modules/
 server/dist/
-server/public/
+server/public/index.*
 
 # Release (keep the directory, not the contents)
 release/*
