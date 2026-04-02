@@ -107,7 +107,7 @@ export function syncExternalSubscriptions(): void {
         subscribedUsers.delete(user)
     }
 
-    console.log(`[hl ws] synced subscriptions for ${desiredUsers.size} users from sheet`)
+    console.log(`[hl ws] synced subscriptions for ${desiredUsers.size} users`)
 }
 
 // ── Internal ───────────────────────────────────────────────────────────────────
