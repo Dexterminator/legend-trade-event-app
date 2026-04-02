@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Competition Admin</title>
+	<style>
+		:root {
+			--bg: #101214;
+			--panel: #171a1d;
+			--panel-soft: #1e2328;
+			--card: #161a1f;
+			--card-border: #2a3138;
+			--text: #ecf0f3;
+			--muted: #99a3ad;
+			--accent: #7fb3ff;
+			--positive: #58d68d;
+			--negative: #ff7b72;
+			--shadow: none;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+			color: var(--text);
+			background: var(--bg);
+		}
+
+		.shell {
+			width: min(1200px, calc(100vw - 32px));
+			margin: 0 auto;
+			padding: 32px 0 48px;
+		}
+
+		.toolbar {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 12px;
+			margin-bottom: 24px;
+			padding: 14px 16px;
+			border: 1px solid var(--card-border);
+			border-radius: 10px;
+			background: var(--panel);
+		}
+
+		.pill {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 8px 12px;
+			border-radius: 999px;
+			background: var(--panel-soft);
+			color: var(--muted);
+			font-size: 13px;
+			border: 1px solid var(--card-border);
+		}
+
+		.pill strong {
+			color: var(--text);
+		}
+
+		.dot {
+			width: 10px;
+			height: 10px;
+			border-radius: 999px;
+			background: #5f6b76;
+		}
+
+		.dot.live {
+			background: var(--positive);
+			box-shadow: none;
+		}
+
+		.cards {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+			gap: 18px;
+		}
+
+		.card {
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			gap: 14px;
+			border-radius: 10px;
+			border: 1px solid var(--card-border);
+			background: var(--card);
+			box-shadow: var(--shadow);
+			padding: 16px;
+		}
+
+		.card.eliminated {
+			opacity: 0.7;
+		}
+
+		.card::before {
+			display: none;
+		}
+
+		.card-header {
+			display: flex;
+			align-items: flex-start;
+			gap: 14px;
+		}
+
+		.avatar {
+			width: 68px;
+			height: 68px;
+			border-radius: 12px;
+			object-fit: cover;
+		}
+
+		.identity {
+			min-width: 0;
+		}
+
+		.username {
+			margin: 0;
+			font-size: 18px;
+			line-height: 1.15;
+			word-break: break-word;
+		}
+
+		.card.eliminated .username {
+			text-decoration: line-through;
+			text-decoration-thickness: 1.5px;
+		}
+
+		.country {
+			margin-top: 6px;
+			color: var(--muted);
+			font-size: 13px;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+
+		.stats {
+			display: grid;
+			gap: 10px;
+		}
+
+		.stat {
+			display: grid;
+			gap: 4px;
+		}
+
+		.toggle {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			color: var(--muted);
+			font-size: 11px;
+			letter-spacing: 0.08em;
+			line-height: 1.2;
+			text-transform: uppercase;
+			margin-top: auto;
+		}
+
+		.toggle input {
+			margin: 0;
+			width: 16px;
+			height: 16px;
+			accent-color: var(--accent);
+		}
+
+		.label {
+			display: block;
+			margin-bottom: 5px;
+			color: var(--muted);
+			font-size: 11px;
+			letter-spacing: 0.11em;
+			text-transform: uppercase;
+		}
+
+		.value {
+			display: block;
+			font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+			font-size: 14px;
+			line-height: 1.1;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.value.positive {
+			color: var(--positive);
+		}
+
+		.value.negative {
+			color: var(--negative);
+		}
+
+		.empty {
+			padding: 28px;
+			border: 1px dashed var(--card-border);
+			border-radius: 16px;
+			text-align: center;
+			color: var(--muted);
+			background: var(--panel);
+		}
+
+		@media (max-width: 640px) {
+			.shell {
+				width: min(100vw - 20px, 1200px);
+				padding-top: 20px;
+			}
+
+			.toolbar {
+				padding: 12px;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<main class="shell">
+		<section class="toolbar">
+			<div class="pill"><span id="status-dot" class="dot"></span><strong id="status-text">Connecting</strong>
+			</div>
+			<div class="pill">Updated <strong id="updated-at">never</strong></div>
+		</section>
+
+		<section id="cards" class="cards" aria-live="polite"></section>
+	</main>
+
+	<script>
+		const cardsEl = document.getElementById('cards')
+		const statusDotEl = document.getElementById('status-dot')
+		const statusTextEl = document.getElementById('status-text')
+		const updatedAtEl = document.getElementById('updated-at')
+		const cardElements = new Map()
+		const pendingEliminationUpdates = new Set()
+		let emptyStateEl = null
+
+		async function refresh() {
+			try {
+				const response = await fetch('/debug/state', { cache: 'no-store' })
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`)
+				}
+
+				const nextState = await response.json()
+				render(nextState)
+			} catch (error) {
+				renderError(error instanceof Error ? error.message : String(error))
+			}
+		}
+
+		function render(nextState) {
+			const status = nextState?.connection?.status ?? 'disconnected'
+			const updatedAt = nextState?.competition?.leaderboard?.ts ?? nextState?.connection?.updatedAt ?? null
+			const traders = Array.isArray(nextState?.competition?.leaderboard?.traders)
+				? nextState.competition.leaderboard.traders
+				: []
+
+			statusDotEl.classList.toggle('live', status === 'connected')
+			statusTextEl.textContent = status
+			updatedAtEl.textContent = formatTimestamp(updatedAt)
+
+			if (traders.length === 0) {
+				renderEmptyState('No leaderboard snapshot has been stored yet.')
+				return
+			}
+
+			clearEmptyState()
+			syncCards(traders)
+		}
+
+		function renderError(message) {
+			statusDotEl.classList.remove('live')
+			statusTextEl.textContent = 'error'
+			updatedAtEl.textContent = 'unavailable'
+			renderEmptyState(`Failed to load state: ${message}`)
+		}
+
+		function syncCards(traders) {
+			const activeIds = new Set(traders.map((trader) => trader.user_id))
+
+			for (const [userId, elements] of cardElements.entries()) {
+				if (activeIds.has(userId)) continue
+				elements.root.remove()
+				cardElements.delete(userId)
+			}
+
+			for (let index = 0; index < traders.length; index++) {
+				const trader = traders[index]
+				const elements = cardElements.get(trader.user_id) ?? createCard(trader, index)
+				updateCard(elements, trader)
+
+				const currentChild = cardsEl.children[index]
+				if (currentChild !== elements.root) {
+					cardsEl.insertBefore(elements.root, currentChild ?? null)
+				}
+			}
+		}
+
+		function createCard(trader, index) {
+			const root = document.createElement('article')
+			root.className = 'card'
+			root.style.animationDelay = `${index * 35}ms`
+
+			const header = document.createElement('div')
+			header.className = 'card-header'
+
+			const avatar = document.createElement('img')
+			avatar.className = 'avatar'
+			avatar.loading = 'lazy'
+
+			const identity = document.createElement('div')
+			identity.className = 'identity'
+
+			const username = document.createElement('h2')
+			username.className = 'username'
+
+			const country = document.createElement('div')
+			country.className = 'country'
+
+			identity.append(username, country)
+
+			const eliminationToggle = createToggle(trader.user_id)
+			header.append(avatar, identity)
+
+			const stats = document.createElement('div')
+			stats.className = 'stats'
+
+			const rankValue = createStat(stats, 'Rank')
+			const pnlUsdValue = createStat(stats, 'PnL USD')
+			const pnlPctValue = createStat(stats, 'PnL %')
+			const volumeUsdValue = createStat(stats, 'Volume USD')
+
+			root.append(header, stats, eliminationToggle.label)
+			cardsEl.append(root)
+
+			const elements = {
+				root,
+				avatar,
+				username,
+				country,
+				rankValue,
+				pnlUsdValue,
+				pnlPctValue,
+				volumeUsdValue,
+				eliminationToggle: eliminationToggle.input,
+			}
+
+			cardElements.set(trader.user_id, elements)
+			return elements
+		}
+
+		function createStat(container, labelText, extraClass = '') {
+			const stat = document.createElement('div')
+			stat.className = 'stat'
+
+			const label = document.createElement('span')
+			label.className = 'label'
+			label.textContent = labelText
+
+			const value = document.createElement('span')
+			value.className = ['value', extraClass].filter(Boolean).join(' ')
+
+			stat.append(label, value)
+			container.append(stat)
+			return value
+		}
+
+		function createToggle(userId) {
+			const label = document.createElement('label')
+			label.className = 'toggle'
+
+			const input = document.createElement('input')
+			input.type = 'checkbox'
+			input.addEventListener('change', () => {
+				void updateElimination(userId, input.checked, input)
+			})
+
+			const text = document.createElement('span')
+			text.textContent = 'Eliminated?'
+
+			label.append(input, text)
+			return { label, input }
+		}
+
+		function updateCard(elements, trader) {
+			elements.root.classList.toggle('eliminated', Boolean(trader.is_eliminated))
+			elements.avatar.src = trader.avatar_url
+			elements.avatar.alt = `${trader.username} avatar`
+			elements.username.textContent = trader.username
+			elements.country.textContent = trader.country_code
+			elements.rankValue.textContent = String(trader.rank)
+			elements.eliminationToggle.checked = Boolean(trader.is_eliminated)
+			elements.eliminationToggle.disabled = pendingEliminationUpdates.has(trader.user_id)
+
+			setValue(elements.pnlUsdValue, formatCurrency(trader.pnl_usd), valueClass(trader.pnl_usd))
+			setValue(elements.pnlPctValue, formatPercent(trader.pnl_pct), valueClass(trader.pnl_pct))
+			setValue(elements.volumeUsdValue, formatCurrency(trader.volume_usd))
+		}
+
+		async function updateElimination(userId, isEliminated, input) {
+			pendingEliminationUpdates.add(userId)
+			input.disabled = true
+
+			try {
+				const response = await fetch(`/admin/traders/${encodeURIComponent(userId)}/elimination`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ is_eliminated: isEliminated }),
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`)
+				}
+
+				await refresh()
+			} catch (error) {
+				input.checked = !isEliminated
+				renderError(error instanceof Error ? error.message : String(error))
+			} finally {
+				pendingEliminationUpdates.delete(userId)
+				input.disabled = false
+			}
+		}
+
+		function setValue(element, text, extraClass = '') {
+			element.textContent = text
+			element.className = ['value', extraClass].filter(Boolean).join(' ')
+		}
+
+		function renderEmptyState(message) {
+			for (const elements of cardElements.values()) {
+				elements.root.remove()
+			}
+			cardElements.clear()
+
+			if (emptyStateEl === null) {
+				emptyStateEl = document.createElement('div')
+				emptyStateEl.className = 'empty'
+				cardsEl.append(emptyStateEl)
+			}
+
+			emptyStateEl.textContent = message
+		}
+
+		function clearEmptyState() {
+			if (emptyStateEl === null) return
+
+			emptyStateEl.remove()
+			emptyStateEl = null
+		}
+
+		function valueClass(number) {
+			if (number > 0) return 'positive'
+			if (number < 0) return 'negative'
+			return ''
+		}
+
+		function formatCurrency(number) {
+			return new Intl.NumberFormat('en-US', {
+				style: 'currency',
+				currency: 'USD',
+				maximumFractionDigits: 2,
+			}).format(Number(number ?? 0))
+		}
+
+		function formatPercent(number) {
+			return `${Number(number ?? 0).toFixed(2)}%`
+		}
+
+		function formatTimestamp(value) {
+			if (value === null || value === undefined) {
+				return 'never'
+			}
+
+			const date = new Date(typeof value === 'number' ? value : String(value))
+			if (Number.isNaN(date.getTime())) {
+				return String(value)
+			}
+
+			return date.toLocaleTimeString([], {
+				hour: '2-digit',
+				minute: '2-digit',
+				second: '2-digit',
+			})
+		}
+
+		refresh()
+		setInterval(refresh, 1000)
+	</script>
+</body>
+
+</html>
