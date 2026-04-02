@@ -3,14 +3,18 @@ import type { Server } from 'node:http'
 import { state } from './state.js'
 
 let wss: WebSocketServer | null = null
-let stateInterval: ReturnType<typeof setInterval> | null = null
+let leaderboardInterval: ReturnType<typeof setInterval> | null = null
 
 export function createWsServer(server: Server): WebSocketServer {
     wss = new WebSocketServer({ server, path: '/ws' })
 
     wss.on('connection', (ws: WebSocket) => {
-        // Send full state immediately on connect
-        ws.send(JSON.stringify({ type: 'initial_state', payload: { ...state } }))
+        ws.send(JSON.stringify({
+            type: 'connected',
+            payload: {
+                message: 'Connection successful',
+            },
+        }))
 
         ws.on('error', (err) => {
             console.error('[ws client] error:', err.message)
@@ -29,9 +33,9 @@ export function createWsServer(server: Server): WebSocketServer {
 }
 
 export function closeWsServer(): void {
-    if (stateInterval !== null) {
-        clearInterval(stateInterval)
-        stateInterval = null
+    if (leaderboardInterval !== null) {
+        clearInterval(leaderboardInterval)
+        leaderboardInterval = null
     }
     if (wss) {
         for (const client of wss.clients) {
@@ -43,16 +47,16 @@ export function closeWsServer(): void {
 }
 
 export function startStateBroadcast(): void {
-    if (stateInterval !== null) {
-        clearInterval(stateInterval)
+    if (leaderboardInterval !== null) {
+        clearInterval(leaderboardInterval)
     }
 
-    stateInterval = setInterval(() => {
+    leaderboardInterval = setInterval(() => {
         broadcast({
-            type: 'state_update',
-            payload: { ...state },
+            type: 'leaderboard',
+            payload: state.competition.leaderboard,
         })
-    }, 1000)
+    }, 500)
 }
 
 /**

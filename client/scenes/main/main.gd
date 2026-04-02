@@ -99,6 +99,8 @@ func _handle_message(raw: String) -> void:
 	var payload: Dictionary = data.get("payload", {})
 
 	match msg_type:
+		"leaderboard":
+				SignalBus.standings_updated.emit(payload)
 		"initial_state", "mock_state_update":
 			if payload.has("standings"):
 				SignalBus.standings_updated.emit(str(payload["standings"]))

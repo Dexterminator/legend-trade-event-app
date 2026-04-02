@@ -13,10 +13,10 @@ func _ready() -> void:
 	for i in range(standings_container.get_child_count()):
 		var p: PlayerPanel = standings_container.get_child(i)
 		p.name_label.text = "JOHN NUMBERS %d" % (i + 1)
-		p.set_score(randi_range(0, 1000000))
+		p.set_pnl_pct(randi_range(0, 1000000))
 	_set_placements()
 
-func sort_by_score() -> void:
+func sort_by_rank() -> void:
 	var panels := standings_container.get_children()
 
 	panels.sort_custom(func(a: PlayerPanel, b: PlayerPanel) -> int:
@@ -93,18 +93,18 @@ func animate_sort(container: VBoxContainer) -> void:
 		else:
 			panel.z_index = 0
 
-func _on_standings_updated(_text: String) -> void:
+func _on_standings_updated(payload: Dictionary) -> void:
 	if not inited:
 		inited = true
 		return
+
+	print(payload["traders"][0])
 	sorting = true
 	for child: PlayerPanel in standings_container.get_children():
-		if randf() < 0.15:
-			child.set_score(randi_range(0, 1000000))
-
+		pass
 	# TODO Only animate if placements changed
 	await Utils.wait(self , 0.7)
-	animate_sort(standings_container)
+	# animate_sort(standings_container)
 	await Utils.wait(self , 1.0)
 	sorting = false
 
