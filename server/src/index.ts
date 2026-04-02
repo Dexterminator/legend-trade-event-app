@@ -2,7 +2,7 @@ import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createWsServer, closeWsServer, startStateBroadcast, mockBroadcast } from './wsServer.js'
+import { createWsServer, closeWsServer, startStateBroadcast } from './wsServer.js'
 import { connectExternal, destroyExternal } from './wsExternal.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -28,7 +28,6 @@ app.get('*', (_req, res) => {
 const server = createServer(app)
 createWsServer(server)
 startStateBroadcast()
-mockBroadcast()
 
 server.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`)

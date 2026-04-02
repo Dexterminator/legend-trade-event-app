@@ -1,67 +1,23 @@
-export interface Contestant {
-    contestant_number: string
-    name: string
-    wallet_address: string
-    profile_url: string
-    is_out: boolean
-}
-
-export interface UserState {
-    payload?: unknown
-    contestant?: Contestant
-}
-
 export interface State {
-    standings: string
-    score: string
-    ticker: string
-    users: Record<string, UserState>
+    object: Record<string, unknown>
 }
 
 export const state: State = {
-    standings: '',
-    score: '',
-    ticker: '',
-    users: {},
+    object: {
+        connected: false,
+        counter: 0,
+        source: 'idle',
+        updatedAt: new Date(0).toISOString(),
+    },
 }
 
-export function updateState(partial: Partial<State>): void {
-    Object.assign(state, partial)
+export function setStateObject(nextObject: Record<string, unknown>): void {
+    state.object = nextObject
 }
 
-export function setUserPayload(userAddress: string, payload: unknown): void {
-    const key = userAddress.toLowerCase()
-    state.users[key] = {
-        ...state.users[key],
-        payload,
+export function patchStateObject(partial: Record<string, unknown>): void {
+    state.object = {
+        ...state.object,
+        ...partial,
     }
-}
-
-export function setContestants(contestantsByWallet: Record<string, Contestant>): void {
-    const nextWallets = new Set(Object.keys(contestantsByWallet))
-
-    // Remove stale contestant entries while preserving existing payload data.
-    for (const [wallet, current] of Object.entries(state.users)) {
-        if (current.contestant && !nextWallets.has(wallet)) {
-            const { contestant: _contestant, ...rest } = current
-            state.users[wallet] = rest
-        }
-    }
-
-    for (const [wallet, contestant] of Object.entries(contestantsByWallet)) {
-        state.users[wallet] = {
-            ...state.users[wallet],
-            contestant,
-        }
-    }
-}
-
-export function getContestantWalletAddresses(): string[] {
-    const wallets: string[] = []
-    for (const [wallet, userState] of Object.entries(state.users)) {
-        if (userState.contestant) {
-            wallets.push(wallet)
-        }
-    }
-    return wallets
 }

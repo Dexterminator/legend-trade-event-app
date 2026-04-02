@@ -3,7 +3,6 @@ import type { Server } from 'node:http'
 import { state } from './state.js'
 
 let wss: WebSocketServer | null = null
-let mockInterval: ReturnType<typeof setInterval> | null = null
 let stateInterval: ReturnType<typeof setInterval> | null = null
 
 export function createWsServer(server: Server): WebSocketServer {
@@ -30,10 +29,6 @@ export function createWsServer(server: Server): WebSocketServer {
 }
 
 export function closeWsServer(): void {
-    if (mockInterval !== null) {
-        clearInterval(mockInterval)
-        mockInterval = null
-    }
     if (stateInterval !== null) {
         clearInterval(stateInterval)
         stateInterval = null
@@ -47,51 +42,12 @@ export function closeWsServer(): void {
     }
 }
 
-export function mockBroadcast(): void {
-    if (mockInterval !== null) {
-        clearInterval(mockInterval)
-    }
-
-    mockInterval = setInterval(() => {
-        const a = Math.floor(Math.random() * 101)
-        const b = Math.floor(Math.random() * 101)
-        const c = Math.floor(Math.random() * 101)
-
-        const scoreA = Math.floor(Math.random() * 21)
-        const scoreB = Math.floor(Math.random() * 21)
-        const tickerMessages = [
-            'Momentum building',
-            'Big move incoming',
-            'Market cooling off',
-            'Market heating up',
-            'Unexpected trade',
-            'Tightening spreads',
-            'Volatility rising',
-        ]
-        const ticker = `${tickerMessages[Math.floor(Math.random() * tickerMessages.length)]} #${Math.floor(Math.random() * 1000)}`
-
-        broadcast({
-            type: 'mock_state_update',
-            payload: {
-                standings: `A: ${a}\nB: ${b}\nC: ${c}`,
-                score: `A ${scoreA} - ${scoreB} B`,
-                ticker,
-            },
-        })
-    }, 3000)
-}
-
 export function startStateBroadcast(): void {
     if (stateInterval !== null) {
         clearInterval(stateInterval)
     }
 
     stateInterval = setInterval(() => {
-        for (const userState of Object.values(state.users)) {
-            if (userState.contestant) {
-                console.log(userState.contestant)
-            }
-        }
         broadcast({
             type: 'state_update',
             payload: { ...state },

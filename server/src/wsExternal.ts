@@ -1,69 +1,73 @@
 import { WebSocket } from 'ws'
-import { getContestantWalletAddresses, setUserPayload } from './state.js'
+import { patchStateObject } from './state.js'
 
-const HYPERLIQUID_WS_URL = 'wss://api.hyperliquid.xyz/ws'
+const EXTERNAL_WS_URL = process.env['EXTERNAL_WS_URL']
 
 const BASE_DELAY_MS = 1_000
 const MAX_DELAY_MS = 30_000
-
-// Subscriptions used in legend.trade
-// allMids
-// openOrders
-// allDexsClearinghouseState
-// spotState
+const FAKE_MESSAGE_INTERVAL_MS = 2_000
 
 let socket: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let fakeMessageTimer: ReturnType<typeof setInterval> | null = null
 let attempt = 0
-const subscribedUsers = new Set<string>()
 let destroyed = false
+let fakeCounter = 0
 
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 export function connectExternal(): void {
     if (destroyed) return
 
+    if (!EXTERNAL_WS_URL) {
+        startFakeFeed()
+        return
+    }
+
     if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
         return
     }
 
-    console.log(`[hl ws] connecting to ${HYPERLIQUID_WS_URL} …`)
-    socket = new WebSocket(HYPERLIQUID_WS_URL)
+    console.log(`[external ws] connecting to ${EXTERNAL_WS_URL} ...`)
+    socket = new WebSocket(EXTERNAL_WS_URL)
 
     socket.on('open', () => {
         attempt = 0
-        subscribedUsers.clear()
-        syncExternalSubscriptions()
+        patchStateObject({
+            connected: true,
+            source: 'websocket',
+            updatedAt: new Date().toISOString(),
+        })
     })
 
     socket.on('message', (raw) => {
         try {
-            const msg: unknown = JSON.parse(raw.toString())
-            if (typeof msg !== 'object' || msg === null) return
-
-            const data = (msg as Record<string, unknown>)['data']
-            const user = (data as Record<string, unknown> | undefined)?.['user']
-            if (typeof user !== 'string' || user.length === 0) {
-                console.warn('[hl ws] message missing data.user')
-                return
-            }
-
-            setUserPayload(user, msg)
+            const payload = parseMessage(raw.toString())
+            patchStateObject({
+                connected: true,
+                lastMessage: payload,
+                source: 'websocket',
+                updatedAt: new Date().toISOString(),
+            })
         } catch {
-            console.warn('[hl ws] unparseable message:', raw.toString().slice(0, 120))
+            console.warn('[external ws] unparseable message:', raw.toString().slice(0, 120))
         }
     })
 
     socket.on('close', (code, reason) => {
-        console.log(`[hl ws] closed (${code} ${reason.toString()})`)
+        console.log(`[external ws] closed (${code} ${reason.toString()})`)
         socket = null
-        subscribedUsers.clear()
+        patchStateObject({
+            connected: false,
+            source: 'websocket',
+            updatedAt: new Date().toISOString(),
+        })
         scheduleReconnect()
     })
 
     socket.on('error', (err) => {
         // 'close' fires after 'error', so reconnect is triggered there.
-        console.error('[hl ws] error:', err.message)
+        console.error('[external ws] error:', err.message)
     })
 }
 
@@ -73,47 +77,60 @@ export function destroyExternal(): void {
         clearTimeout(reconnectTimer)
         reconnectTimer = null
     }
+    if (fakeMessageTimer !== null) {
+        clearInterval(fakeMessageTimer)
+        fakeMessageTimer = null
+    }
     socket?.terminate()
     socket = null
-    subscribedUsers.clear()
-}
-
-export function syncExternalSubscriptions(): void {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return
-
-    const desiredUsers = new Set(getContestantWalletAddresses())
-
-    for (const user of desiredUsers) {
-        if (subscribedUsers.has(user)) continue
-        socket.send(JSON.stringify({
-            method: 'subscribe',
-            subscription: {
-                type: 'allDexsClearinghouseState',
-                user,
-            },
-        }))
-        subscribedUsers.add(user)
-    }
-
-    for (const user of [...subscribedUsers]) {
-        if (desiredUsers.has(user)) continue
-        socket.send(JSON.stringify({
-            method: 'unsubscribe',
-            subscription: {
-                type: 'allDexsClearinghouseState',
-                user,
-            },
-        }))
-        subscribedUsers.delete(user)
-    }
-
-    console.log(`[hl ws] synced subscriptions for ${desiredUsers.size} users`)
+    patchStateObject({
+        connected: false,
+        source: EXTERNAL_WS_URL ? 'websocket' : 'fake',
+        updatedAt: new Date().toISOString(),
+    })
 }
 
 // ── Internal ───────────────────────────────────────────────────────────────────
 
+function startFakeFeed(): void {
+    if (fakeMessageTimer !== null) return
+
+    attempt = 0
+    patchStateObject({
+        connected: true,
+        counter: fakeCounter,
+        lastMessage: {
+            example: 'fake websocket payload',
+        },
+        source: 'fake',
+        updatedAt: new Date().toISOString(),
+    })
+
+    fakeMessageTimer = setInterval(() => {
+        fakeCounter += 1
+        patchStateObject({
+            connected: true,
+            counter: fakeCounter,
+            lastMessage: {
+                count: fakeCounter,
+                text: `example-message-${fakeCounter}`,
+            },
+            source: 'fake',
+            updatedAt: new Date().toISOString(),
+        })
+    }, FAKE_MESSAGE_INTERVAL_MS)
+}
+
+function parseMessage(raw: string): unknown {
+    try {
+        return JSON.parse(raw)
+    } catch {
+        return raw
+    }
+}
+
 function scheduleReconnect(): void {
-    if (destroyed) return
+    if (destroyed || !EXTERNAL_WS_URL) return
 
     if (reconnectTimer !== null) {
         clearTimeout(reconnectTimer)
@@ -122,7 +139,7 @@ function scheduleReconnect(): void {
     // Exponential backoff: 1s, 2s, 4s, 8s … capped at 30s
     const delay = Math.min(BASE_DELAY_MS * 2 ** attempt, MAX_DELAY_MS)
     attempt++
-    console.log(`[hl ws] reconnecting in ${delay}ms (attempt ${attempt})`)
+    console.log(`[external ws] reconnecting in ${delay}ms (attempt ${attempt})`)
     reconnectTimer = setTimeout(() => {
         reconnectTimer = null
         connectExternal()
