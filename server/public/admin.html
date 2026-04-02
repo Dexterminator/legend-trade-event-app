@@ -97,7 +97,7 @@
 		}
 
 		.card.eliminated {
-			opacity: 0.7;
+			opacity: 0.6;
 		}
 
 		.card::before {
@@ -304,7 +304,7 @@
 			for (let index = 0; index < traders.length; index++) {
 				const trader = traders[index]
 				const elements = cardElements.get(trader.user_id) ?? createCard(trader, index)
-				updateCard(elements, trader)
+				updateCard(elements, trader, traders.length)
 
 				const currentChild = cardsEl.children[index]
 				if (currentChild !== elements.root) {
@@ -403,13 +403,13 @@
 			return { label, input }
 		}
 
-		function updateCard(elements, trader) {
+		function updateCard(elements, trader, totalTraders) {
 			elements.root.classList.toggle('eliminated', Boolean(trader.is_eliminated))
 			elements.avatar.src = trader.avatar_url
 			elements.avatar.alt = `${trader.username} avatar`
 			elements.username.textContent = trader.username
 			elements.country.textContent = trader.country_code
-			elements.rankValue.textContent = String(trader.rank)
+			setRankValue(elements.rankValue, trader.rank, totalTraders)
 			elements.eliminationToggle.checked = Boolean(trader.is_eliminated)
 			elements.eliminationToggle.disabled = pendingEliminationUpdates.has(trader.user_id)
 
@@ -447,6 +447,17 @@
 		function setValue(element, text, extraClass = '') {
 			element.textContent = text
 			element.className = ['value', extraClass].filter(Boolean).join(' ')
+			element.style.color = ''
+		}
+
+		function setRankValue(element, rank, totalTraders) {
+			setValue(element, String(rank))
+
+			const safeTotal = Math.max(Number(totalTraders) || 1, 1)
+			const safeRank = Math.min(Math.max(Number(rank) || safeTotal, 1), safeTotal)
+			const ratio = safeTotal === 1 ? 0 : (safeRank - 1) / (safeTotal - 1)
+			const hue = 120 - (120 * ratio)
+			element.style.color = `hsl(${hue} 70% 60%)`
 		}
 
 		function renderEmptyState(message) {
