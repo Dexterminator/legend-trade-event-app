@@ -2,6 +2,7 @@ import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { state } from './state.js'
 import { createWsServer, closeWsServer, startStateBroadcast } from './wsServer.js'
 import { connectExternal, destroyExternal } from './wsExternal.js'
 
@@ -15,6 +16,10 @@ const PUBLIC_DIR = path.resolve(__dirname, '..', 'public')
 // ── Express ────────────────────────────────────────────────────────────────────
 const app = express()
 app.use(express.json())
+
+app.get('/debug/state', (_req, res) => {
+    res.json(state)
+})
 
 // Serve Godot web export static files
 app.use(express.static(PUBLIC_DIR))
