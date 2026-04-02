@@ -106,7 +106,7 @@
 
 		.card-header {
 			display: flex;
-			align-items: flex-start;
+			align-items: center;
 			gap: 14px;
 		}
 
@@ -119,6 +119,9 @@
 
 		.identity {
 			min-width: 0;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
 		}
 
 		.username {
@@ -146,6 +149,13 @@
 			gap: 10px;
 		}
 
+		.stats-row {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+			align-items: end;
+		}
+
 		.stat {
 			display: grid;
 			gap: 4px;
@@ -155,12 +165,12 @@
 			display: flex;
 			align-items: center;
 			gap: 8px;
+			justify-self: start;
 			color: var(--muted);
 			font-size: 11px;
 			letter-spacing: 0.08em;
 			line-height: 1.2;
 			text-transform: uppercase;
-			margin-top: auto;
 		}
 
 		.toggle input {
@@ -212,6 +222,10 @@
 
 			.toolbar {
 				padding: 12px;
+			}
+
+			.stats-row {
+				grid-template-columns: 1fr;
 			}
 		}
 	</style>
@@ -327,13 +341,18 @@
 
 			const stats = document.createElement('div')
 			stats.className = 'stats'
+			const pnlRow = document.createElement('div')
+			pnlRow.className = 'stats-row'
+			const rankRow = document.createElement('div')
+			rankRow.className = 'stats-row'
 
-			const rankValue = createStat(stats, 'Rank')
-			const pnlUsdValue = createStat(stats, 'PnL USD')
-			const pnlPctValue = createStat(stats, 'PnL %')
-			const volumeUsdValue = createStat(stats, 'Volume USD')
+			const pnlPctValue = createStat(pnlRow, 'PnL %')
+			const pnlUsdValue = createStat(pnlRow, 'PnL USD')
+			const rankValue = createStat(rankRow, 'Rank')
+			rankRow.append(eliminationToggle.label)
+			stats.append(pnlRow, rankRow)
 
-			root.append(header, stats, eliminationToggle.label)
+			root.append(header, stats)
 			cardsEl.append(root)
 
 			const elements = {
@@ -344,7 +363,6 @@
 				rankValue,
 				pnlUsdValue,
 				pnlPctValue,
-				volumeUsdValue,
 				eliminationToggle: eliminationToggle.input,
 			}
 
@@ -397,7 +415,6 @@
 
 			setValue(elements.pnlUsdValue, formatCurrency(trader.pnl_usd), valueClass(trader.pnl_usd))
 			setValue(elements.pnlPctValue, formatPercent(trader.pnl_pct), valueClass(trader.pnl_pct))
-			setValue(elements.volumeUsdValue, formatCurrency(trader.volume_usd))
 		}
 
 		async function updateElimination(userId, isEliminated, input) {
