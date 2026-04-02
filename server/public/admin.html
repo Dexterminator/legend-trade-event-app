@@ -50,6 +50,13 @@
 			background: var(--panel);
 		}
 
+		.toolbar-links {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 12px;
+			margin-left: auto;
+		}
+
 		.pill {
 			display: inline-flex;
 			align-items: center;
@@ -64,6 +71,23 @@
 
 		.pill strong {
 			color: var(--text);
+		}
+
+		a.pill {
+			color: var(--accent);
+			text-decoration: none;
+			border-color: rgba(127, 179, 255, 0.35);
+		}
+
+		a.pill::after {
+			content: ' ↗';
+			font-size: 12px;
+			line-height: 1;
+		}
+
+		a.pill:hover {
+			border-color: var(--accent);
+			background: rgba(127, 179, 255, 0.1);
 		}
 
 		.dot {
@@ -224,6 +248,11 @@
 				padding: 12px;
 			}
 
+			.toolbar-links {
+				margin-left: 0;
+				width: 100%;
+			}
+
 			.stats-row {
 				grid-template-columns: 1fr;
 			}
@@ -237,6 +266,12 @@
 			<div class="pill"><span id="status-dot" class="dot"></span><strong id="status-text">Connecting</strong>
 			</div>
 			<div class="pill">Updated <strong id="updated-at">never</strong></div>
+			<div class="toolbar-links">
+				<a class="pill" href="http://localhost:5050/index.html?overlay=standings" target="_blank"
+					rel="noreferrer">Leaderboard overlay</a>
+				<a class="pill" href="http://localhost:5050/index.html?overlay=recent_trades" target="_blank"
+					rel="noreferrer">Recent trades overlay</a>
+			</div>
 		</section>
 
 		<section id="cards" class="cards" aria-live="polite"></section>
