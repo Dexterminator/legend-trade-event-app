@@ -17,7 +17,7 @@ const PUBLIC_DIR = path.resolve(__dirname, '..', 'public')
 const app = express()
 app.use(express.json())
 
-app.get('/admin', (_req, res) => {
+app.get('/', (_req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, 'admin.html'))
 })
 
