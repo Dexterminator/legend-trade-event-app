@@ -4,16 +4,13 @@ extends Node2D
 @onready var panels_by_player_index: Array = standings_container.get_children()
 var inited := false
 var sorting := false
+var player_panel_by_user_name: Dictionary[String, PlayerPanel] = {}
 
 func _ready() -> void:
 	modulate.a = 0.0
 	var t := create_tween()
 	t.tween_property(self , "modulate:a", 1.0, .3).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
 	SignalBus.standings_updated.connect(_on_standings_updated)
-	for i in range(standings_container.get_child_count()):
-		var p: PlayerPanel = standings_container.get_child(i)
-		p.name_label.text = "JOHN NUMBERS %d" % (i + 1)
-		p.set_pnl_pct(randi_range(0, 1000000))
 	_set_placements()
 
 func sort_by_rank() -> void:
@@ -93,12 +90,28 @@ func animate_sort(container: VBoxContainer) -> void:
 		else:
 			panel.z_index = 0
 
+func _init_player_panels(payload: Dictionary) -> void:
+	for i in range(standings_container.get_child_count()):
+		var leaderboard_player: Dictionary = payload["traders"][i]
+		var p: PlayerPanel = standings_container.get_child(i)
+		p.name_label.text = leaderboard_player["username"]
+		player_panel_by_user_name[leaderboard_player["username"]] = p
+
+func _update_player_panels(payload: Dictionary) -> void:
+	for i in range(len(payload["traders"])):
+		var leaderboard_player: Dictionary = payload["traders"][i]
+		var p: PlayerPanel = player_panel_by_user_name[leaderboard_player["username"]]
+		var pnl_pct: float = leaderboard_player["pnl_pct"]
+		p.set_pnl_pct(pnl_pct)
+
 func _on_standings_updated(payload: Dictionary) -> void:
 	if not inited:
 		inited = true
+		_init_player_panels(payload)
+		_update_player_panels(payload)
 		return
 
-	print(payload["traders"][0])
+	_update_player_panels(payload)
 	sorting = true
 	for child: PlayerPanel in standings_container.get_children():
 		pass

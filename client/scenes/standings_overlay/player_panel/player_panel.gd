@@ -9,24 +9,14 @@ extends PanelContainer
 enum State {EXPANDED, COLLAPSED}
 var state: State = State.COLLAPSED
 var score: int = 0
-var pnl_pct: int = 0
+var pnl_pct: float = 0.0
 var ranking: int = 0
 var showing_score: int = 0
 var score_tween: Tween
 
-func set_pnl_pct(new_score: int) -> void:
-	score = new_score
-	if score_tween:
-		score_tween.kill()
-	score_tween = create_tween()
-	score_tween.tween_method(
-		func(value: float) -> void:
-			score_label.text = "%s" % Utils.format_number(int(value)),
-		float(showing_score),
-		float(score),
-		0.5
-	)
-	showing_score = score
+func set_pnl_pct(new_pnl_pct: float) -> void:
+	pnl_pct = new_pnl_pct
+	score_label.text = "%0.2f%%" % pnl_pct
 
 func toggle_expanded() -> void:
 	if animation_player.is_playing():
