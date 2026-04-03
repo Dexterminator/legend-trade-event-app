@@ -8,6 +8,8 @@ SERVER_DIR="$SCRIPT_DIR/server"
 CLIENT_DIR="$SCRIPT_DIR/client"
 RELEASE_DIR="$SCRIPT_DIR/release"
 PUBLIC_DIR="$SERVER_DIR/public"
+ADMIN_FILE="$PUBLIC_DIR/admin.html"
+TMP_ADMIN_FILE=""
 
 # ── 1. Build server ────────────────────────────────────────────────────────────
 echo "==> [1/4] Building server …"
@@ -26,9 +28,20 @@ mkdir -p "$RELEASE_DIR/public"
 
 # ── 3. Copy web export into server/public ─────────────────────────────────────
 echo "==> [3/4] Copying web export into server/public …"
+if [[ -f "$ADMIN_FILE" ]]; then
+  TMP_ADMIN_FILE="$(mktemp)"
+  cp "$ADMIN_FILE" "$TMP_ADMIN_FILE"
+fi
+
 rm -rf "$PUBLIC_DIR"
 mkdir -p "$PUBLIC_DIR"
 cp -r "$RELEASE_DIR/public/." "$PUBLIC_DIR/"
+
+if [[ -n "$TMP_ADMIN_FILE" ]]; then
+  cp "$TMP_ADMIN_FILE" "$ADMIN_FILE"
+  cp "$TMP_ADMIN_FILE" "$RELEASE_DIR/public/admin.html"
+  rm -f "$TMP_ADMIN_FILE"
+fi
 
 # ── 4. Assemble /release/server ───────────────────────────────────────────────
 echo "==> [4/4] Assembling /release/server …"
