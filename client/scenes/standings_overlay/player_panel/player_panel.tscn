@@ -4,12 +4,21 @@
 [ext_resource type="Theme" uid="uid://mdn7ofcnq8dn" path="res://assets/theme.tres" id="1_bxhcd"]
 [ext_resource type="Texture2D" uid="uid://ceyw6q48hbfqi" path="res://assets/basecard.svg" id="2_l0tbx"]
 [ext_resource type="FontFile" uid="uid://cnk6su13xxbv4" path="res://assets/akira_expanded/Akira Expanded Demo.otf" id="4_bxhcd"]
+[ext_resource type="Texture2D" uid="uid://chn5yt6q3nvbm" path="res://assets/up-position.svg" id="5_r568l"]
+[ext_resource type="Texture2D" uid="uid://bfluwuj1myb8d" path="res://assets/pfp_border.png" id="6_87vf4"]
+[ext_resource type="Texture2D" uid="uid://fn5cdcyey50a" path="res://assets/flag_us.png" id="7_fqxgb"]
+[ext_resource type="Texture2D" uid="uid://cgkgjq1k4stft" path="res://assets/BTC.png" id="8_oghwe"]
+[ext_resource type="Texture2D" uid="uid://dwje5kcc6t0o3" path="res://assets/SOL.png" id="9_tcy7y"]
+[ext_resource type="Texture2D" uid="uid://bl8l1htj0piq" path="res://assets/ETH.png" id="10_7ty48"]
+[ext_resource type="FontFile" uid="uid://b2ipp26hqd2i1" path="res://assets/Geist_Mono/static/GeistMono-Regular.ttf" id="11_5p1tb"]
+[ext_resource type="FontFile" uid="uid://g8chxwbm1455" path="res://assets/Geist_Mono/static/GeistMono-SemiBold.ttf" id="12_l56je"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_bxhcd"]
 texture = ExtResource("2_l0tbx")
 
 [node name="PlayerPanel" type="PanelContainer" unique_id=275146529]
 clip_contents = true
+custom_minimum_size = Vector2(0, 100)
 offset_right = 228.0
 offset_bottom = 65.0
 size_flags_horizontal = 3
@@ -22,7 +31,9 @@ script = ExtResource("1_8msps")
 layout_mode = 2
 
 [node name="RankContainer" type="HBoxContainer" parent="HBoxContainer" unique_id=1718828486]
+custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
+alignment = 1
 
 [node name="Label" type="Label" parent="HBoxContainer/RankContainer" unique_id=1047074440]
 layout_mode = 2
@@ -30,5 +41,75 @@ theme_override_fonts/font = ExtResource("4_bxhcd")
 theme_override_font_sizes/font_size = 32
 text = "1"
 
+[node name="Spacer" type="Control" parent="HBoxContainer/RankContainer" unique_id=1955787534]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+
 [node name="TextureRect" type="TextureRect" parent="HBoxContainer/RankContainer" unique_id=1523804827]
 layout_mode = 2
+texture = ExtResource("5_r568l")
+stretch_mode = 3
+
+[node name="PFP" type="TextureRect" parent="HBoxContainer" unique_id=1286960282]
+layout_mode = 2
+texture = ExtResource("6_87vf4")
+expand_mode = 2
+stretch_mode = 4
+
+[node name="UserNameLabel" type="Label" parent="HBoxContainer" unique_id=901455862]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_bxhcd")
+theme_override_font_sizes/font_size = 18
+text = "VELVETMILKMAN"
+horizontal_alignment = 1
+
+[node name="Flag" type="TextureRect" parent="HBoxContainer" unique_id=581039145]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+texture = ExtResource("7_fqxgb")
+stretch_mode = 3
+
+[node name="TopPositions" type="HBoxContainer" parent="HBoxContainer" unique_id=1978806850]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/TopPositions" unique_id=395876630]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+texture = ExtResource("8_oghwe")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextureRect2" type="TextureRect" parent="HBoxContainer/TopPositions" unique_id=82287562]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+texture = ExtResource("10_7ty48")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextureRect3" type="TextureRect" parent="HBoxContainer/TopPositions" unique_id=1618009251]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+texture = ExtResource("9_tcy7y")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VolumeLabel" type="Label" parent="HBoxContainer" unique_id=1174290722]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("11_5p1tb")
+theme_override_font_sizes/font_size = 24
+text = "$1.08K"
+horizontal_alignment = 1
+
+[node name="PNL" type="Label" parent="HBoxContainer" unique_id=1699235061]
+modulate = Color(0.28267664, 0.7935506, 0.4159217, 1)
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("12_l56je")
+theme_override_font_sizes/font_size = 24
+text = "+2.56%"
+horizontal_alignment = 1

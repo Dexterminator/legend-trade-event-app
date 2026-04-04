@@ -34,6 +34,23 @@ static func format_number(n: int) -> String:
 	return s
 
 
+static func format_compact_number(value: float, prefix: String = "") -> String:
+	var suffixes := ["", "K", "M", "B", "T"]
+	var scaled := absf(value)
+	var suffix_index := 0
+
+	while scaled >= 1000.0 and suffix_index < suffixes.size() - 1:
+		scaled /= 1000.0
+		suffix_index += 1
+
+	var formatted := "%.2f" % scaled
+	while formatted.contains(".") and (formatted.ends_with("0") or formatted.ends_with(".")):
+		formatted = formatted.left(-1)
+
+	var value_sign := "-" if value < 0.0 else ""
+	return "%s%s%s%s" % [value_sign, prefix, formatted, suffixes[suffix_index]]
+
+
 static func spawn(factory: PackedScene, parent: Node2D, pos: Vector2) -> Node2D:
 	var node: Node2D = factory.instantiate()
 	node.global_position = pos
