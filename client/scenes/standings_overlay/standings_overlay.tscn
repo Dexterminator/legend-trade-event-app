@@ -3,17 +3,20 @@
 [ext_resource type="Script" uid="uid://c3udkhtkxrs58" path="res://scenes/standings_overlay/standings_overlay.gd" id="1_ecs45"]
 [ext_resource type="Theme" uid="uid://mdn7ofcnq8dn" path="res://assets/theme.tres" id="2_ldnha"]
 [ext_resource type="PackedScene" uid="uid://du2x1v0hpinxi" path="res://scenes/standings_overlay/player_panel/player_panel.tscn" id="3_twirp"]
+[ext_resource type="FontFile" uid="uid://cnk6su13xxbv4" path="res://assets/akira_expanded/Akira Expanded Demo.otf" id="3_yyrvr"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_twirp"]
-content_margin_left = 20.0
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yyrvr"]
 content_margin_top = 10.0
-content_margin_right = 20.0
 content_margin_bottom = 10.0
-bg_color = Color(0, 0, 0, 0.78431374)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
+bg_color = Color(0.11372549, 0.11372549, 0.11372549, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="Theme" id="Theme_0agrs"]
+default_font = ExtResource("3_yyrvr")
+default_font_size = 16
 
 [node name="StandingsOverlay" type="Node2D" unique_id=1265137379]
 script = ExtResource("1_ecs45")
@@ -26,14 +29,64 @@ offset_bottom = 760.0
 theme = ExtResource("2_ldnha")
 theme_override_constants/separation = 10
 
-[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer" unique_id=1548412633]
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer" unique_id=34832739]
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_twirp")
+theme_override_constants/margin_left = 20
 
-[node name="Label" type="Label" parent="VBoxContainer/PanelContainer" unique_id=711783634]
+[node name="Label" type="Label" parent="VBoxContainer/MarginContainer" unique_id=711783634]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "ROUND 1"
+theme_override_fonts/font = ExtResource("3_yyrvr")
+theme_override_font_sizes/font_size = 36
+text = "Current Standings"
+
+[node name="TableHeader" type="PanelContainer" parent="VBoxContainer" unique_id=1676240971]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_yyrvr")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/TableHeader" unique_id=1050319167]
+layout_mode = 2
+theme = SubResource("Theme_0agrs")
+
+[node name="Label" type="Label" parent="VBoxContainer/TableHeader/HBoxContainer" unique_id=67574450]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "RANK"
+horizontal_alignment = 1
+
+[node name="Label2" type="Label" parent="VBoxContainer/TableHeader/HBoxContainer" unique_id=916330681]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "PFP"
+horizontal_alignment = 1
+
+[node name="Label3" type="Label" parent="VBoxContainer/TableHeader/HBoxContainer" unique_id=1653892170]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "NAME"
+horizontal_alignment = 1
+
+[node name="Label4" type="Label" parent="VBoxContainer/TableHeader/HBoxContainer" unique_id=943247563]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "CTRY"
+horizontal_alignment = 1
+
+[node name="Label5" type="Label" parent="VBoxContainer/TableHeader/HBoxContainer" unique_id=945332305]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "TOP POS"
+horizontal_alignment = 1
+
+[node name="Label6" type="Label" parent="VBoxContainer/TableHeader/HBoxContainer" unique_id=1744274931]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "VOLUME"
+horizontal_alignment = 1
+
+[node name="Label7" type="Label" parent="VBoxContainer/TableHeader/HBoxContainer" unique_id=1472182733]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "PNL"
 horizontal_alignment = 1
 
 [node name="StandingsContainer" type="VBoxContainer" parent="VBoxContainer" unique_id=1844736037]

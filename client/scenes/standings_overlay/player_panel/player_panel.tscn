@@ -2,198 +2,33 @@
 
 [ext_resource type="Script" uid="uid://cl8pouem7yhnn" path="res://scenes/standings_overlay/player_panel/player_panel.gd" id="1_8msps"]
 [ext_resource type="Theme" uid="uid://mdn7ofcnq8dn" path="res://assets/theme.tres" id="1_bxhcd"]
-[ext_resource type="Texture2D" uid="uid://dlun3mo22x028" path="res://assets/placeholder.png" id="1_rask7"]
-[ext_resource type="FontFile" uid="uid://dvpky2gy5ft1v" path="res://assets/Geist/static/Geist-Black.ttf" id="2_l0tbx"]
-[ext_resource type="FontFile" uid="uid://blwbjlk3w6irg" path="res://assets/Geist/static/Geist-Light.ttf" id="4_87vf4"]
-[ext_resource type="FontFile" uid="uid://d4dksvgcss1tj" path="res://assets/Geist_Mono/static/GeistMono-Medium.ttf" id="4_r568l"]
+[ext_resource type="Texture2D" uid="uid://ceyw6q48hbfqi" path="res://assets/basecard.svg" id="2_l0tbx"]
+[ext_resource type="FontFile" uid="uid://cnk6su13xxbv4" path="res://assets/akira_expanded/Akira Expanded Demo.otf" id="4_bxhcd"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4p068"]
-content_margin_left = 30.0
-content_margin_top = 10.0
-content_margin_right = 30.0
-content_margin_bottom = 10.0
-bg_color = Color(0, 0, 0, 0.78431374)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
-
-[sub_resource type="Animation" id="Animation_rask7"]
-length = 0.001
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath(".:custom_minimum_size")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [Vector2(0, 0)]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath("PlayerPicture:modulate")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [Color(1, 1, 1, 0)]
-}
-
-[sub_resource type="Animation" id="Animation_8msps"]
-resource_name = "collapse"
-length = 0.8
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath(".:custom_minimum_size")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.8),
-"transitions": PackedFloat32Array(-2, -2),
-"update": 0,
-"values": [Vector2(0, 270), Vector2(0, 0)]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath("PlayerPicture:modulate")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0, 0.53333336),
-"transitions": PackedFloat32Array(-2, -2),
-"update": 0,
-"values": [Color(1, 1, 1, 1), Color(1, 1, 1, 0)]
-}
-
-[sub_resource type="Animation" id="Animation_4p068"]
-resource_name = "expand"
-length = 0.8
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath(".:custom_minimum_size")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.8),
-"transitions": PackedFloat32Array(-2, -2),
-"update": 0,
-"values": [Vector2(0, 0), Vector2(0, 270)]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath("PlayerPicture:modulate")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0, 0.4, 0.8),
-"transitions": PackedFloat32Array(-2, -2, 1),
-"update": 0,
-"values": [Color(1, 1, 1, 0), Color(1, 1, 1, 0), Color(1, 1, 1, 1)]
-}
-
-[sub_resource type="AnimationLibrary" id="AnimationLibrary_rask7"]
-_data = {
-&"RESET": SubResource("Animation_rask7"),
-&"collapse": SubResource("Animation_8msps"),
-&"expand": SubResource("Animation_4p068")
-}
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8msps"]
-bg_color = Color(0.21410304, 0.21410304, 0.21410301, 1)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
-
-[sub_resource type="StyleBoxLine" id="StyleBoxLine_8msps"]
-color = Color(1, 1, 1, 1)
-grow_begin = -5.0
-grow_end = -5.0
-vertical = true
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_bxhcd"]
+texture = ExtResource("2_l0tbx")
 
 [node name="PlayerPanel" type="PanelContainer" unique_id=275146529]
 clip_contents = true
-offset_right = 327.0
+offset_right = 228.0
 offset_bottom = 65.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme = ExtResource("1_bxhcd")
-theme_override_styles/panel = SubResource("StyleBoxFlat_4p068")
+theme_override_styles/panel = SubResource("StyleBoxTexture_bxhcd")
 script = ExtResource("1_8msps")
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1808049090]
-libraries/ = SubResource("AnimationLibrary_rask7")
-
-[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1047533924]
-layout_mode = 2
-size_flags_vertical = 0
-theme_override_constants/separation = 17
-
-[node name="AspectRatioContainer" type="AspectRatioContainer" parent="HBoxContainer" unique_id=1113648853]
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1534249927]
 layout_mode = 2
 
-[node name="PanelContainer" type="PanelContainer" parent="HBoxContainer/AspectRatioContainer" unique_id=1946056975]
-custom_minimum_size = Vector2(35, 0)
+[node name="RankContainer" type="HBoxContainer" parent="HBoxContainer" unique_id=1718828486]
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_8msps")
 
-[node name="PlacementLabel" type="Label" parent="HBoxContainer/AspectRatioContainer/PanelContainer" unique_id=75631962]
-unique_name_in_owner = true
+[node name="Label" type="Label" parent="HBoxContainer/RankContainer" unique_id=1047074440]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.6392157, 0.09411765, 1)
-theme_override_fonts/font = ExtResource("2_l0tbx")
-theme_override_font_sizes/font_size = 26
+theme_override_fonts/font = ExtResource("4_bxhcd")
+theme_override_font_sizes/font_size = 32
 text = "1"
-horizontal_alignment = 1
-vertical_alignment = 1
 
-[node name="Spacer" type="Control" parent="HBoxContainer" unique_id=1730196182]
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/RankContainer" unique_id=1523804827]
 layout_mode = 2
-
-[node name="NameLabel" type="Label" parent="HBoxContainer" unique_id=991938552]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_fonts/font = ExtResource("2_l0tbx")
-theme_override_font_sizes/font_size = 32
-text = "Player 1"
-
-[node name="Panel" type="Panel" parent="HBoxContainer" unique_id=1777763091]
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxLine_8msps")
-
-[node name="Divider" type="Label" parent="HBoxContainer" unique_id=679059525]
-visible = false
-layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "|"
-
-[node name="NameLabel2" type="Label" parent="HBoxContainer" unique_id=655070918]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_fonts/font = ExtResource("4_87vf4")
-theme_override_font_sizes/font_size = 32
-text = "PNL:"
-
-[node name="ScoreLabel" type="Label" parent="HBoxContainer" unique_id=907248853]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(160, 0)
-layout_mode = 2
-theme_override_fonts/font = ExtResource("4_r568l")
-theme_override_font_sizes/font_size = 32
-text = "0%"
-
-[node name="PlayerPicture" type="Sprite2D" parent="." unique_id=1828077865]
-modulate = Color(1, 1, 1, 0)
-position = Vector2(230.00002, 161)
-scale = Vector2(0.3, 0.3)
-texture = ExtResource("1_rask7")
