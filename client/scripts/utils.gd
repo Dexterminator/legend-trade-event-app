@@ -122,3 +122,7 @@ static func tween_property_with_curve_relative(
 		1.0,
 		duration
 	)
+
+static func format_pct_label(label: Label, value: float) -> void:
+	label.modulate = Constants.GREEN if value > 0 else Constants.RED
+	label.text = "%s%.2f%%" % ["+" if value > 0 else "", value]

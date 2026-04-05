@@ -7,8 +7,7 @@ extends Node2D
 # ── Overlay registry ──────────────────────────────────────────────────────────
 const OVERLAYS: Dictionary[String, PackedScene] = {
 	"standings": preload("res://scenes/standings_overlay/standings_overlay.tscn"),
-	"score": preload("res://scenes/score_overlay/score_overlay.tscn"),
-	"ticker": preload("res://scenes/ticker_overlay/ticker_overlay.tscn"),
+	"top_bar": preload("res://scenes/top_bar_overlay/top_bar_overlay.tscn"),
 }
 
 # ── WebSocket config ──────────────────────────────────────────────────────────
@@ -69,7 +68,7 @@ func _spawn_overlay() -> void:
 				key = kv[1].to_lower().strip_edges()
 				break
 	else:
-		key = "standings"
+		key = "top_bar"
 	if key in OVERLAYS:
 		add_child((OVERLAYS[key] as PackedScene).instantiate())
 
@@ -101,15 +100,5 @@ func _handle_message(raw: String) -> void:
 	match msg_type:
 		"leaderboard":
 				SignalBus.standings_updated.emit(payload)
-		"initial_state", "mock_state_update":
-			if payload.has("standings"):
-				SignalBus.standings_updated.emit(str(payload["standings"]))
-			if payload.has("score"):
-				SignalBus.score_updated.emit(str(payload["score"]))
-			if payload.has("ticker"):
-				SignalBus.ticker_updated.emit(str(payload["ticker"]))
-		"state_update":
-			pass
-			# print(str(payload))
 		_:
 			push_warning("[Main] Unknown message type: " + msg_type)

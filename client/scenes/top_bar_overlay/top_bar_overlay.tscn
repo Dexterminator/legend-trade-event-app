@@ -1,0 +1,70 @@
+[gd_scene format=3 uid="uid://bejcc7a67yrq8"]
+
+[ext_resource type="Script" uid="uid://dyi31f0lv7d6i" path="res://scenes/top_bar_overlay/top_bar_overlay.gd" id="1_cubve"]
+[ext_resource type="FontFile" uid="uid://cnk6su13xxbv4" path="res://assets/akira_expanded/Akira Expanded Demo.otf" id="2_nqpe0"]
+[ext_resource type="PackedScene" uid="uid://dadtw3bewm53r" path="res://scenes/top_bar_overlay/top_bar_player/top_bar_player.tscn" id="3_h4y3j"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_h4y3j"]
+bg_color = Color(0.92941177, 0.48235294, 0.1882353, 1)
+
+[node name="TopBarOverlay" type="Node2D" unique_id=347718617]
+script = ExtResource("1_cubve")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=463310071]
+offset_left = 50.0
+offset_top = 50.0
+offset_right = 554.0
+offset_bottom = 124.0
+
+[node name="Headers" type="VBoxContainer" parent="HBoxContainer" unique_id=737765453]
+layout_mode = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="HBoxContainer/Headers" unique_id=1446742955]
+custom_minimum_size = Vector2(250, 35)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_h4y3j")
+
+[node name="Label" type="Label" parent="HBoxContainer/Headers/PanelContainer" unique_id=1467095192]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_nqpe0")
+text = "PLAYER NAME"
+horizontal_alignment = 1
+
+[node name="PanelContainer2" type="PanelContainer" parent="HBoxContainer/Headers" unique_id=1104773057]
+custom_minimum_size = Vector2(250, 35)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_h4y3j")
+
+[node name="Label" type="Label" parent="HBoxContainer/Headers/PanelContainer2" unique_id=1665388478]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_nqpe0")
+text = "PNL"
+horizontal_alignment = 1
+
+[node name="PlayersContainer" type="HBoxContainer" parent="HBoxContainer" unique_id=287820489]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TopBarPlayer" parent="HBoxContainer/PlayersContainer" unique_id=172892168 instance=ExtResource("3_h4y3j")]
+layout_mode = 2
+
+[node name="TopBarPlayer2" parent="HBoxContainer/PlayersContainer" unique_id=504504791 instance=ExtResource("3_h4y3j")]
+layout_mode = 2
+
+[node name="TopBarPlayer3" parent="HBoxContainer/PlayersContainer" unique_id=1272736416 instance=ExtResource("3_h4y3j")]
+layout_mode = 2
+
+[node name="TopBarPlayer4" parent="HBoxContainer/PlayersContainer" unique_id=614178400 instance=ExtResource("3_h4y3j")]
+layout_mode = 2
+
+[node name="TopBarPlayer5" parent="HBoxContainer/PlayersContainer" unique_id=1822983980 instance=ExtResource("3_h4y3j")]
+layout_mode = 2
+
+[node name="TopBarPlayer6" parent="HBoxContainer/PlayersContainer" unique_id=1014481726 instance=ExtResource("3_h4y3j")]
+layout_mode = 2
+
+[node name="TopBarPlayer7" parent="HBoxContainer/PlayersContainer" unique_id=1466415623 instance=ExtResource("3_h4y3j")]
+layout_mode = 2
+
+[node name="TopBarPlayer8" parent="HBoxContainer/PlayersContainer" unique_id=1869212360 instance=ExtResource("3_h4y3j")]
+layout_mode = 2

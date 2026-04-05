@@ -24,9 +24,6 @@ const rank_delta_textures: Dictionary = {
 
 var rank: int = 0
 
-func _format_pct_with_sign(value: float) -> String:
-	return "%s%.2f%%" % ["+" if value > 0 else "", value]
-
 func _update_rank_label() -> void:
 	rank_label.text = str(rank)
 
@@ -43,8 +40,7 @@ func _update(updates: Dictionary) -> void:
 	rank = updates["rank"]
 	var pnl_pct: float = updates["pnl_pct"]
 	var volume: float = updates["volume_usd"]
-	pnl_pct_label.text = _format_pct_with_sign(pnl_pct)
-	pnl_pct_label.modulate = Constants.GREEN if pnl_pct > 0 else Constants.RED
+	Utils.format_pct_label(pnl_pct_label, pnl_pct)
 	volume_label.text = Utils.format_compact_number(volume)
 	if Delta.exceeded(ts_rank_delta_sign_changed, RANK_DELTA_RESET_TIME):
 		rank_delta_sign = 0
