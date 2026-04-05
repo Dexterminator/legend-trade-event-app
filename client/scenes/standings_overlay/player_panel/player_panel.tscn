@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://du2x1v0hpinxi"]
 
 [ext_resource type="Script" uid="uid://cl8pouem7yhnn" path="res://scenes/standings_overlay/player_panel/player_panel.gd" id="1_8msps"]
+[ext_resource type="Script" path="res://scenes/standings_overlay/player_panel/player_panel_sparkline.gd" id="2_7l4e1"]
 [ext_resource type="Theme" uid="uid://mdn7ofcnq8dn" path="res://assets/theme.tres" id="1_bxhcd"]
 [ext_resource type="Texture2D" uid="uid://ceyw6q48hbfqi" path="res://assets/basecard.svg" id="2_l0tbx"]
 [ext_resource type="FontFile" uid="uid://cnk6su13xxbv4" path="res://assets/akira_expanded/Akira Expanded Demo.otf" id="4_bxhcd"]
@@ -113,7 +114,13 @@ theme_override_font_sizes/font_size = 24
 text = "$1.08K"
 horizontal_alignment = 1
 
-[node name="PnlPctLabel" type="Label" parent="HBoxContainer" unique_id=1699235061]
+[node name="PnlContainer" type="HBoxContainer" parent="HBoxContainer"]
+custom_minimum_size = Vector2(390, 0)
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="PnlPctLabel" type="Label" parent="HBoxContainer/PnlContainer" unique_id=1699235061]
 unique_name_in_owner = true
 modulate = Color(0.40784314, 0.8039216, 0.4, 1)
 custom_minimum_size = Vector2(200, 0)
@@ -122,3 +129,11 @@ theme_override_fonts/font = ExtResource("12_l56je")
 theme_override_font_sizes/font_size = 24
 text = "+2.56%"
 horizontal_alignment = 1
+
+[node name="PnlSparkline" type="Control" parent="HBoxContainer/PnlContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 90)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+script = ExtResource("2_7l4e1")

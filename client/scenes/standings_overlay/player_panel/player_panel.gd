@@ -1,6 +1,8 @@
 class_name PlayerPanel
 extends PanelContainer
 
+const PlayerPanelSparklineScript := preload("res://scenes/standings_overlay/player_panel/player_panel_sparkline.gd")
+
 @onready var user_name_label: Label = %UserNameLabel
 @onready var rank_container: HBoxContainer = %RankContainer
 @onready var rank_label: Label = %RankLabel
@@ -9,6 +11,7 @@ extends PanelContainer
 @onready var volume_label: Label = %VolumeLabel
 @onready var top_positions_container: HBoxContainer = %TopPositions
 @onready var pnl_pct_label: Label = %PnlPctLabel
+@onready var pnl_sparkline: PlayerPanelSparklineScript = %PnlSparkline
 @onready var rank_delta_indicator: TextureRect = %RankDeltaIndicator
 
 var rank_delta_sign: int = 0
@@ -32,6 +35,7 @@ func init(trader: Dictionary, new_rank: int) -> void:
 	user_name_label.text = trader["username"]
 	rank = new_rank
 	_update_rank_label()
+	pnl_sparkline.clear_values()
 	var user_name: String = trader["username"]
 	var country_code: String = trader["country_code"]
 	pfp_texture.texture = load("res://assets/%s.png" % user_name.to_lower())
@@ -41,7 +45,9 @@ func _update(updates: Dictionary) -> void:
 	rank = updates["rank"]
 	var pnl_pct: float = updates["pnl_pct"]
 	var volume: float = updates["volume_usd"]
+	var sparkline: Array = updates.get("sparkline", [])
 	Utils.format_pct_label(pnl_pct_label, pnl_pct)
+	pnl_sparkline.set_values(sparkline)
 	volume_label.text = Utils.format_compact_number(volume)
 	is_eliminated = updates["is_eliminated"]
 	visible = not is_eliminated
@@ -51,7 +57,6 @@ func _update(updates: Dictionary) -> void:
 		rank_delta_indicator.texture = rank_delta_textures["neutral"]
 
 	# TODO: Set top pos
-	# TODO: Draw sparkline
 
 func set_rank_label(new_rank: int) -> void:
 	var prev_rank: int = int(rank_label.text)
