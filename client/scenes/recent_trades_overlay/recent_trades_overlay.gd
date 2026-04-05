@@ -39,7 +39,7 @@ func _fade_out_and_remove_trade(recent_trade: RecentTrade) -> void:
 		recent_trade,
 		"modulate:a",
 		0.0,
-		FADE_DURATION * 0.5
+		FADE_DURATION * 0.8
 	).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tween.finished.connect(func() -> void:
 		if trade_tweens.get(recent_trade) == tween:
