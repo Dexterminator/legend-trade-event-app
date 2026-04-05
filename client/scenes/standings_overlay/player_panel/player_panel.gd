@@ -31,6 +31,7 @@ func _update(updates: Dictionary) -> void:
 	pnl_pct_label.text = _format_pct_with_sign(pnl_pct)
 	pnl_pct_label.modulate = Constants.GREEN if pnl_pct > 0 else Constants.RED
 	volume_label.text = Utils.format_compact_number(volume)
+	# TODO: Set 
 	# TODO: Set top pos
 	# TODO: Draw sparkline
 

@@ -12,9 +12,8 @@ func _ready() -> void:
 	t.tween_property(self , "modulate:a", 1.0, 2.0).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	SignalBus.standings_updated.connect(_on_standings_updated)
 
-func sort_by_rank() -> void:
-	var panels := standings_container.get_children()
 
+func _sort_panels_by_rank(panels: Array) -> void:
 	panels.sort_custom(func(a: PlayerPanel, b: PlayerPanel) -> bool:
 		if a.rank != b.rank:
 			return a.rank < b.rank
@@ -22,8 +21,24 @@ func sort_by_rank() -> void:
 		return a.user_name_label.text.naturalnocasecmp_to(b.user_name_label.text) < 0
 	)
 
+func sort_by_rank() -> void:
+	var panels := standings_container.get_children()
+	_sort_panels_by_rank(panels)
+
 	for i in panels.size():
 		standings_container.move_child(panels[i], i)
+
+
+func _has_position_changes(container: VBoxContainer) -> bool:
+	var current_panels := container.get_children()
+	var sorted_panels := current_panels.duplicate()
+	_sort_panels_by_rank(sorted_panels)
+
+	for i in current_panels.size():
+		if current_panels[i] != sorted_panels[i]:
+			return true
+
+	return false
 
 func _set_placements() -> void:
 	var panels := standings_container.get_children()
@@ -32,6 +47,9 @@ func _set_placements() -> void:
 		panel.set_rank_label(i + 1)
 
 func animate_sort(container: VBoxContainer) -> void:
+	if not _has_position_changes(container):
+		return
+
 	sorting = true
 	var panels := container.get_children()
 
@@ -87,7 +105,7 @@ func animate_sort(container: VBoxContainer) -> void:
 			 .set_ease(Tween.EASE_IN_OUT)
 		else:
 			panel.z_index = 0
-	await Utils.wait(self , animation_time * 1.2)
+	await Utils.wait(self , animation_time * 1.1)
 	sorting = false
 
 func _init_player_panels(payload: Dictionary) -> void:
