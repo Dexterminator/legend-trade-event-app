@@ -67,6 +67,7 @@ func _get_trade_target_position(index: int) -> Vector2:
 func _animate_recent_trades() -> void:
 	for i in recent_trades.size():
 		var recent_trade: RecentTrade = recent_trades[i]
+		var should_play_closed_trade_flash := i == 0
 		var tween := create_tween()
 		_kill_trade_tween(recent_trade)
 		trade_tweens[recent_trade] = tween
@@ -86,6 +87,8 @@ func _animate_recent_trades() -> void:
 		tween.finished.connect(func() -> void:
 			if trade_tweens.get(recent_trade) == tween:
 				trade_tweens.erase(recent_trade)
+			if should_play_closed_trade_flash and is_instance_valid(recent_trade):
+				recent_trade.play_queued_closed_trade_flash()
 		)
 
 
