@@ -5,6 +5,8 @@
 [ext_resource type="Texture2D" uid="uid://fn5cdcyey50a" path="res://assets/flag_us.png" id="2_lge3t"]
 [ext_resource type="FontFile" uid="uid://bv5byb3xsj0db" path="res://assets/Geist_Mono/static/GeistMono-Black.ttf" id="4_dlo4p"]
 
+[sub_resource type="Theme" id="Theme_dlo4p"]
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_h4y3j"]
 bg_color = Color(0.92941177, 0.48235294, 0.1882353, 1)
 
@@ -12,10 +14,11 @@ bg_color = Color(0.92941177, 0.48235294, 0.1882353, 1)
 bg_color = Color(0.07058824, 0.07058824, 0.07058824, 1)
 
 [node name="TopBarPlayer" type="VBoxContainer" unique_id=172892168]
+theme = SubResource("Theme_dlo4p")
 script = ExtResource("1_lge3t")
 
 [node name="PanelContainer" type="PanelContainer" parent="." unique_id=435549929]
-custom_minimum_size = Vector2(250, 35)
+custom_minimum_size = Vector2(210, 30)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_h4y3j")
 
@@ -40,7 +43,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="PanelContainer2" type="PanelContainer" parent="." unique_id=1110117214]
-custom_minimum_size = Vector2(250, 35)
+custom_minimum_size = Vector2(210, 30)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_4hg7o")
 
@@ -54,6 +57,6 @@ unique_name_in_owner = true
 modulate = Color(0.40784314, 0.8039216, 0.4, 1)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_dlo4p")
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 16
 text = "+3.08%"
 horizontal_alignment = 1
