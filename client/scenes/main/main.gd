@@ -69,7 +69,7 @@ func _spawn_overlay() -> void:
 				key = kv[1].to_lower().strip_edges()
 				break
 	else:
-		key = "recent_trades"
+		key = "standings"
 	if key in OVERLAYS:
 		add_child((OVERLAYS[key] as PackedScene).instantiate())
 
