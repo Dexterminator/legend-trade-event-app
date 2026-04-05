@@ -35,7 +35,8 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 alignment = 1
 
-[node name="Label" type="Label" parent="HBoxContainer/RankContainer" unique_id=1047074440]
+[node name="RankLabel" type="Label" parent="HBoxContainer/RankContainer" unique_id=1047074440]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_bxhcd")
 theme_override_font_sizes/font_size = 32
@@ -50,13 +51,15 @@ layout_mode = 2
 texture = ExtResource("5_r568l")
 stretch_mode = 3
 
-[node name="PFP" type="TextureRect" parent="HBoxContainer" unique_id=1286960282]
+[node name="ProfilePicture" type="TextureRect" parent="HBoxContainer" unique_id=1286960282]
+unique_name_in_owner = true
 layout_mode = 2
 texture = ExtResource("6_87vf4")
 expand_mode = 2
 stretch_mode = 4
 
 [node name="UserNameLabel" type="Label" parent="HBoxContainer" unique_id=901455862]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_bxhcd")
@@ -65,12 +68,14 @@ text = "VELVETMILKMAN"
 horizontal_alignment = 1
 
 [node name="Flag" type="TextureRect" parent="HBoxContainer" unique_id=581039145]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 texture = ExtResource("7_fqxgb")
 stretch_mode = 3
 
 [node name="TopPositions" type="HBoxContainer" parent="HBoxContainer" unique_id=1978806850]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_constants/separation = 10
@@ -98,6 +103,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="VolumeLabel" type="Label" parent="HBoxContainer" unique_id=1174290722]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("11_5p1tb")
@@ -105,8 +111,9 @@ theme_override_font_sizes/font_size = 24
 text = "$1.08K"
 horizontal_alignment = 1
 
-[node name="PNL" type="Label" parent="HBoxContainer" unique_id=1699235061]
-modulate = Color(0.28267664, 0.7935506, 0.4159217, 1)
+[node name="PnlPctLabel" type="Label" parent="HBoxContainer" unique_id=1699235061]
+unique_name_in_owner = true
+modulate = Color(0.40784314, 0.8039216, 0.4, 1)
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("12_l56je")

@@ -1,30 +1,43 @@
 class_name PlayerPanel
 extends PanelContainer
 
-@onready var name_label: Label = %NameLabel
+@onready var user_name_label: Label = %UserNameLabel
+@onready var rank_label: Label = %RankLabel
+@onready var flag_texture: TextureRect = %Flag
+@onready var pfp_texture: TextureRect = %ProfilePicture
+@onready var volume_label: Label = %VolumeLabel
+@onready var top_positions_container: HBoxContainer = %TopPositions
+@onready var pnl_pct_label: Label = %PnlPctLabel
 
-enum State {EXPANDED, COLLAPSED}
-var state: State = State.COLLAPSED
-var score: int = 0
-var pnl_pct: float = 0.0
-var ranking: int = 0
-var showing_score: int = 0
-var score_tween: Tween
+var rank: int = 0
 
-func init() -> void:
-	# Set name
-	# Set PFP
-	# Set country flag
-	# Set top pos
+func _format_pct_with_sign(value: float) -> String:
+	return "%s%.2f%%" % ["+" if value > 0 else "", value]
+
+func _update_rank_label() -> void:
+	rank_label.text = str(rank)
+
+func init(trader: Dictionary, new_rank: int) -> void:
+	user_name_label.text = trader["username"]
+	rank = new_rank
+	_update_rank_label()
+	# TODO: Set PFP (dict by username?)
+	# TODO: Set country flag (dict by username?)
 	pass
 
-func _update() -> void:
-	# Set top pos
+func _update(updates: Dictionary) -> void:
+	rank = updates["rank"]
+	var pnl_pct: float = updates["pnl_pct"]
+	var volume: float = updates["volume_usd"]
+	pnl_pct_label.text = _format_pct_with_sign(pnl_pct)
+	pnl_pct_label.modulate = Constants.GREEN if pnl_pct > 0 else Constants.RED
+	volume_label.text = Utils.format_compact_number(volume)
+
 	# Set trade volume
 	# Set PnL
-	# Draw sparkline
-	pass
+	# TODO: Set top pos
+	# TODO: Draw sparkline
 
-func set_pnl_pct(new_pnl_pct: float) -> void:
-	pnl_pct = new_pnl_pct
-	# score_label.text = "%0.2f%%" % pnl_pct
+func set_rank(new_rank: int) -> void:
+	rank = new_rank
+	rank_label.text = str(rank)

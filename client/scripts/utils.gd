@@ -48,7 +48,7 @@ static func format_compact_number(value: float, prefix: String = "") -> String:
 		formatted = formatted.left(-1)
 
 	var value_sign := "-" if value < 0.0 else ""
-	return "%s%s%s%s" % [value_sign, prefix, formatted, suffixes[suffix_index]]
+	return "$%s%s%s%s" % [value_sign, prefix, formatted, suffixes[suffix_index]]
 
 
 static func spawn(factory: PackedScene, parent: Node2D, pos: Vector2) -> Node2D:
