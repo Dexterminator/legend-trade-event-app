@@ -1,0 +1,119 @@
+[gd_scene format=3 uid="uid://b2epak50qgc8j"]
+
+[ext_resource type="Script" uid="uid://bqhggolb1ay3l" path="res://scenes/recent_trades_overlay/recent_trade/recent_trade.gd" id="1_ylun1"]
+[ext_resource type="FontFile" uid="uid://cnk6su13xxbv4" path="res://assets/akira_expanded/Akira Expanded Demo.otf" id="2_25tr8"]
+[ext_resource type="FontFile" uid="uid://b2ipp26hqd2i1" path="res://assets/Geist_Mono/static/GeistMono-Regular.ttf" id="3_s1726"]
+[ext_resource type="Texture2D" uid="uid://cgkgjq1k4stft" path="res://assets/BTC.png" id="4_87880"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ylun1"]
+content_margin_left = 30.0
+content_margin_top = 20.0
+content_margin_right = 30.0
+content_margin_bottom = 20.0
+bg_color = Color(0.07058824, 0.07058824, 0.07058824, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="RecentTrade" type="Node2D" unique_id=172639757]
+script = ExtResource("1_ylun1")
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=881557867]
+custom_minimum_size = Vector2(600, 100)
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_ylun1")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer" unique_id=896130026]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Row1" type="HBoxContainer" parent="PanelContainer/VBoxContainer" unique_id=1648885959]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="PanelContainer/VBoxContainer/Row1" unique_id=629867553]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_25tr8")
+text = "MINHXDYNASTY"
+
+[node name="Spacer" type="Control" parent="PanelContainer/VBoxContainer/Row1" unique_id=1918117618]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+
+[node name="Action" type="Label" parent="PanelContainer/VBoxContainer/Row1" unique_id=628276811]
+unique_name_in_owner = true
+modulate = Color(0.45882353, 0.45882353, 0.45882353, 1)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_s1726")
+text = "OPENED A POSITION"
+
+[node name="Spacer2" type="Control" parent="PanelContainer/VBoxContainer/Row1" unique_id=1952440959]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+
+[node name="TimeStamp" type="Label" parent="PanelContainer/VBoxContainer/Row1" unique_id=260622424]
+unique_name_in_owner = true
+modulate = Color(0.45882353, 0.45882353, 0.45882353, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("3_s1726")
+text = "3:09"
+horizontal_alignment = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/VBoxContainer/Row1" unique_id=163810761]
+layout_mode = 2
+
+[node name="Row2" type="HBoxContainer" parent="PanelContainer/VBoxContainer" unique_id=699261629]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="PanelContainer/VBoxContainer/Row2" unique_id=741810761]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+texture = ExtResource("4_87880")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Spacer" type="Control" parent="PanelContainer/VBoxContainer/Row2" unique_id=1578629118]
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/VBoxContainer/Row2" unique_id=1842202436]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Symbol" type="Label" parent="PanelContainer/VBoxContainer/Row2/VBoxContainer" unique_id=1032359833]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_s1726")
+theme_override_font_sizes/font_size = 22
+text = "BTC"
+
+[node name="AssetValue" type="Label" parent="PanelContainer/VBoxContainer/Row2/VBoxContainer" unique_id=11095571]
+unique_name_in_owner = true
+modulate = Color(0.45882353, 0.45882353, 0.45882353, 1)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_s1726")
+text = "$12.8K"
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="PanelContainer/VBoxContainer/Row2" unique_id=1245253691]
+layout_mode = 2
+size_flags_horizontal = 10
+theme_override_constants/separation = 0
+alignment = 2
+
+[node name="Size" type="Label" parent="PanelContainer/VBoxContainer/Row2/VBoxContainer2" unique_id=908934630]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_s1726")
+theme_override_font_sizes/font_size = 22
+text = "$12.08K"
+horizontal_alignment = 2
+
+[node name="ClosedPnl" type="Label" parent="PanelContainer/VBoxContainer/Row2/VBoxContainer2" unique_id=1523055883]
+unique_name_in_owner = true
+modulate = Color(0.40784314, 0.8039216, 0.4, 1)
+layout_mode = 2
+text = "+1.38K"
+horizontal_alignment = 2

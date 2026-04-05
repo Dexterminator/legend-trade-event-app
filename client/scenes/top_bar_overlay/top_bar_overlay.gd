@@ -5,6 +5,9 @@ extends Node2D
 var inited: bool = false
 
 func _ready() -> void:
+	modulate.a = 0.0
+	var t := create_tween()
+	t.tween_property(self , "modulate:a", 1.0, 2.0).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	SignalBus.standings_updated.connect(_on_standings_updated)
 
 func _init_top_bar_players(payload: Dictionary) -> void:
