@@ -4,3 +4,7 @@
 
 [node name="RecentTradesOverlay" type="Node2D" unique_id=1227232735]
 script = ExtResource("1_rxi47")
+
+[node name="Spawn" type="Marker2D" parent="." unique_id=1707828302]
+unique_name_in_owner = true
+position = Vector2(1320, 0)

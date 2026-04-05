@@ -19,20 +19,6 @@ static func create(trade_update: Dictionary, parent: Node2D) -> RecentTrade:
 	return instance
 
 func init(trade_update: Dictionary) -> void:
-	#     id: string
-	# ts: number
-	# user_id: string
-	# username: string
-	# avatar_url: string
-	# action: ActivityAction
-	# symbol: string
-	# side: PositionSide
-	# size_usd: number
-	# price: number
-	# leverage: number
-	# margin_usd: number
-	# closed_pnl: number | null
-	# closed_pnl_pct: number | null
 	name_label.text = trade_update["username"]
 	var action: String = trade_update["action"]
 	var size_usd: float = trade_update["size_usd"]
