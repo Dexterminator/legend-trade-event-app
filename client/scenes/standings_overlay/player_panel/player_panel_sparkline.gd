@@ -1,14 +1,16 @@
 class_name PlayerPanelSparkline
 extends Control
 
-const CHART_LINE_WIDTH := 3.0
-const CHART_PADDING_X := 6.0
-const CHART_PADDING_Y := 8.0
+const CHART_LINE_WIDTH := 2.0
+const CHART_PADDING_X := 10.0
+const CHART_PADDING_TOP := 24.0
+const CHART_PADDING_BOTTOM := 10.0
 const CHART_MIN_RANGE_PADDING := 0.05
 const CHART_RANGE_PADDING_RATIO := 0.08
 const BASELINE_DASH_WIDTH := 6.0
 const BASELINE_GAP_WIDTH := 4.0
-const BASELINE_COLOR := Color(0.8, 0.8, 0.8, 0.35)
+const BASELINE_COLOR := Color(0.85, 0.85, 0.85, 0.16)
+const CHART_COLOR := Color(0.84705883, 0.34901962, 0.0627451, 0.22)
 
 var values := PackedFloat32Array()
 
@@ -43,13 +45,13 @@ func _draw() -> void:
 		return
 
 	var chart_size := size
-	if chart_size.x <= CHART_PADDING_X * 2.0 or chart_size.y <= CHART_PADDING_Y * 2.0:
+	if chart_size.x <= CHART_PADDING_X * 2.0 or chart_size.y <= CHART_PADDING_TOP + CHART_PADDING_BOTTOM:
 		return
 
 	var left := CHART_PADDING_X
-	var top := CHART_PADDING_Y
+	var top := CHART_PADDING_TOP
 	var usable_width := chart_size.x - CHART_PADDING_X * 2.0
-	var usable_height := chart_size.y - CHART_PADDING_Y * 2.0
+	var usable_height := chart_size.y - CHART_PADDING_TOP - CHART_PADDING_BOTTOM
 
 	var min_value := values[0]
 	var max_value := values[0]
@@ -67,13 +69,13 @@ func _draw() -> void:
 		min_value -= value_padding
 		max_value += value_padding
 
-	if original_min <= 0.0 and original_max >= 0.0:
-		var baseline_y := top + _value_to_y(0.0, min_value, max_value, usable_height)
-		_draw_dashed_baseline(left, baseline_y, usable_width)
+	# if original_min <= 0.0 and original_max >= 0.0:
+	# 	var baseline_y := top + _value_to_y(0.0, min_value, max_value, usable_height)
+	# 	_draw_dashed_baseline(left, baseline_y, usable_width)
 
 	if values.size() == 1:
 		var point_y := top + _value_to_y(values[0], min_value, max_value, usable_height)
-		draw_circle(Vector2(left + usable_width * 0.5, point_y), CHART_LINE_WIDTH, Constants.ORANGE)
+		draw_circle(Vector2(left + usable_width * 0.5, point_y), CHART_LINE_WIDTH, CHART_COLOR)
 		return
 
 	var points := PackedVector2Array()
@@ -83,7 +85,7 @@ func _draw() -> void:
 		var y := top + _value_to_y(values[i], min_value, max_value, usable_height)
 		points[i] = Vector2(x, y)
 
-	draw_polyline(points, Constants.ORANGE, CHART_LINE_WIDTH, true)
+	draw_polyline(points, CHART_COLOR, CHART_LINE_WIDTH, true)
 
 func _value_to_y(value: float, min_value: float, max_value: float, usable_height: float) -> float:
 	var normalized := inverse_lerp(min_value, max_value, value)
