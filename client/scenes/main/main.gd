@@ -8,6 +8,7 @@ extends Node2D
 const OVERLAYS: Dictionary[String, PackedScene] = {
 	"standings": preload("res://scenes/standings_overlay/standings_overlay.tscn"),
 	"top_bar": preload("res://scenes/top_bar_overlay/top_bar_overlay.tscn"),
+	"recent_trades": preload("res://scenes/recent_trades_overlay/recent_trades_overlay.tscn"),
 }
 
 # ── WebSocket config ──────────────────────────────────────────────────────────
@@ -68,7 +69,7 @@ func _spawn_overlay() -> void:
 				key = kv[1].to_lower().strip_edges()
 				break
 	else:
-		key = "standings"
+		key = "recent_trades"
 	if key in OVERLAYS:
 		add_child((OVERLAYS[key] as PackedScene).instantiate())
 
@@ -100,5 +101,7 @@ func _handle_message(raw: String) -> void:
 	match msg_type:
 		"leaderboard":
 				SignalBus.standings_updated.emit(payload)
+		"trade_update":
+				SignalBus.trade_update.emit(payload)
 		_:
 			push_warning("[Main] Unknown message type: " + msg_type)

@@ -1,3 +1,5 @@
+import { broadcast } from "./wsServer.js"
+
 export type ActivityAction = 'opened' | 'closed' | 'added' | 'reduced' | 'flipped'
 export type PositionSide = 'LONG' | 'SHORT'
 export type CompetitionChannel = 'connected' | 'activity' | 'leaderboard' | 'pnl' | 'pnl:tick'
@@ -213,6 +215,10 @@ function appendActivityItem(activity: ActivityItem[], nextItem: ActivityItem): A
 
     const nextActivity = [...activity]
     nextActivity[existingIndex] = nextItem
+    broadcast({
+        type: 'trade_update',
+        payload: nextItem,
+    })
     return nextActivity
 }
 

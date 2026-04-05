@@ -126,3 +126,10 @@ static func tween_property_with_curve_relative(
 static func format_pct_label(label: Label, value: float) -> void:
 	label.modulate = Constants.GREEN if value > 0 else Constants.RED
 	label.text = "%s%.2f%%" % ["+" if value > 0 else "", value]
+
+static func format_timestamp(timestamp: int) -> String:
+	var total_seconds := timestamp / 1000.0
+	var seconds: float = fmod(total_seconds, 60.0)
+	var minutes: int = int(total_seconds / 60.0)
+	var time_string: String = "%d:%02d" % [minutes, seconds]
+	return time_string
