@@ -4,7 +4,7 @@
 [ext_resource type="Theme" uid="uid://mdn7ofcnq8dn" path="res://assets/theme.tres" id="1_bxhcd"]
 [ext_resource type="Texture2D" uid="uid://ceyw6q48hbfqi" path="res://assets/basecard.svg" id="2_l0tbx"]
 [ext_resource type="FontFile" uid="uid://cnk6su13xxbv4" path="res://assets/akira_expanded/Akira Expanded Demo.otf" id="4_bxhcd"]
-[ext_resource type="Texture2D" uid="uid://chn5yt6q3nvbm" path="res://assets/up-position.svg" id="5_r568l"]
+[ext_resource type="Texture2D" uid="uid://4d120o8dwwlx" path="res://assets/neutral-position.svg" id="5_r568l"]
 [ext_resource type="Texture2D" uid="uid://bfluwuj1myb8d" path="res://assets/pfp_border.png" id="6_87vf4"]
 [ext_resource type="Texture2D" uid="uid://fn5cdcyey50a" path="res://assets/flag_us.png" id="7_fqxgb"]
 [ext_resource type="Texture2D" uid="uid://cgkgjq1k4stft" path="res://assets/BTC.png" id="8_oghwe"]
