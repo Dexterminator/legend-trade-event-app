@@ -1,7 +1,7 @@
 class_name PlayerPanelSparkline
 extends Control
 
-const CHART_LINE_WIDTH := 2.0
+const CHART_LINE_WIDTH := 4.0
 const CHART_PADDING_X := 10.0
 const CHART_PADDING_TOP := 24.0
 const CHART_PADDING_BOTTOM := 10.0
