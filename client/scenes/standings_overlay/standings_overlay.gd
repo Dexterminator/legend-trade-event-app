@@ -9,20 +9,17 @@ var player_panel_by_user_name: Dictionary[String, PlayerPanel] = {}
 func _ready() -> void:
 	modulate.a = 0.0
 	var t := create_tween()
-	t.tween_property(self , "modulate:a", 1.0, .3).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	t.tween_property(self , "modulate:a", 1.0, 2.0).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	SignalBus.standings_updated.connect(_on_standings_updated)
-	_set_placements()
 
 func sort_by_rank() -> void:
 	var panels := standings_container.get_children()
 
-	panels.sort_custom(func(a: PlayerPanel, b: PlayerPanel) -> int:
-		if a.rank < b.rank:
-			return -1
-		elif a.rank > b.rank:
-			return 1
+	panels.sort_custom(func(a: PlayerPanel, b: PlayerPanel) -> bool:
+		if a.rank != b.rank:
+			return a.rank < b.rank
 
-		return -1 if a.user_name_label.text < b.user_name_label.text else 1
+		return a.user_name_label.text.naturalnocasecmp_to(b.user_name_label.text) < 0
 	)
 
 	for i in panels.size():
@@ -32,9 +29,10 @@ func _set_placements() -> void:
 	var panels := standings_container.get_children()
 	for i in panels.size():
 		var panel: PlayerPanel = panels[i]
-		panel.set_rank(i + 1)
+		panel.set_rank_label(i + 1)
 
 func animate_sort(container: VBoxContainer) -> void:
+	sorting = true
 	var panels := container.get_children()
 
 	# 1️⃣ Store current layout positions
@@ -49,6 +47,7 @@ func animate_sort(container: VBoxContainer) -> void:
 	# 4️⃣ Wait for container to recalculate layout
 	await get_tree().process_frame
 	RenderingServer.render_loop_enabled = true
+	panels = container.get_children()
 
 	var animation_time := 1.0
 	# 5️⃣ Animate from old position to new layout position
@@ -68,10 +67,10 @@ func animate_sort(container: VBoxContainer) -> void:
 	await Utils.wait(self , animation_time * 0.1)
 	for i in panels.size():
 		var panel: PlayerPanel = panels[i]
-		var new_placement: int = i + 1
-		var prev_rank := panel.rank
-		if prev_rank != new_placement:
-			if new_placement < prev_rank:
+		var new_rank: int = i + 1
+		var prev_rank := int(panel.rank_label.text)
+		if prev_rank != new_rank:
+			if new_rank < prev_rank:
 				panel.z_index = 1
 			else:
 				panel.z_index = -1
@@ -81,13 +80,15 @@ func animate_sort(container: VBoxContainer) -> void:
 			).set_trans(Tween.TRANS_CUBIC) \
 			 .set_ease(Tween.EASE_IN_OUT)
 			# After fade out, update text and fade in new placement
-			t.tween_callback(func() -> void: panel.rank_label.text = str(new_placement))
+			t.tween_callback(func() -> void: panel.rank_label.text = str(new_rank))
 			# Fade in new placement
 			t.tween_property(panel.rank_label, "modulate:a", 1.0, 0.4
 			).set_trans(Tween.TRANS_CUBIC) \
 			 .set_ease(Tween.EASE_IN_OUT)
 		else:
 			panel.z_index = 0
+	await Utils.wait(self , animation_time * 1.2)
+	sorting = false
 
 func _init_player_panels(payload: Dictionary) -> void:
 	for i in range(standings_container.get_child_count()):
@@ -110,11 +111,8 @@ func _on_standings_updated(payload: Dictionary) -> void:
 		return
 
 	_update_player_panels(payload)
-	sorting = true
-	for child: PlayerPanel in standings_container.get_children():
-		pass
-	# TODO Only animate if placements changed
-	await Utils.wait(self , 0.7)
-	# animate_sort(standings_container)
-	await Utils.wait(self , 1.0)
-	sorting = false
+
+	if sorting:
+		return
+
+	animate_sort(standings_container)

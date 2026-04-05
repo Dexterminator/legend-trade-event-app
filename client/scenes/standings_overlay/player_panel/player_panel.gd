@@ -23,7 +23,6 @@ func init(trader: Dictionary, new_rank: int) -> void:
 	_update_rank_label()
 	# TODO: Set PFP (dict by username?)
 	# TODO: Set country flag (dict by username?)
-	pass
 
 func _update(updates: Dictionary) -> void:
 	rank = updates["rank"]
@@ -32,12 +31,8 @@ func _update(updates: Dictionary) -> void:
 	pnl_pct_label.text = _format_pct_with_sign(pnl_pct)
 	pnl_pct_label.modulate = Constants.GREEN if pnl_pct > 0 else Constants.RED
 	volume_label.text = Utils.format_compact_number(volume)
-
-	# Set trade volume
-	# Set PnL
 	# TODO: Set top pos
 	# TODO: Draw sparkline
 
-func set_rank(new_rank: int) -> void:
-	rank = new_rank
-	rank_label.text = str(rank)
+func set_rank_label(new_rank: int) -> void:
+	rank_label.text = str(new_rank)
