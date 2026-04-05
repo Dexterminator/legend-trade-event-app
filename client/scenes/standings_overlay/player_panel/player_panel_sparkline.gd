@@ -5,11 +5,7 @@ const CHART_LINE_WIDTH := 2.0
 const CHART_PADDING_X := 10.0
 const CHART_PADDING_TOP := 24.0
 const CHART_PADDING_BOTTOM := 10.0
-const CHART_MIN_RANGE_PADDING := 0.05
-const CHART_RANGE_PADDING_RATIO := 0.08
-const BASELINE_DASH_WIDTH := 6.0
-const BASELINE_GAP_WIDTH := 4.0
-const BASELINE_COLOR := Color(0.85, 0.85, 0.85, 0.16)
+const CHART_AVERAGE_VALUE_RANGE_RADIUS := 1.0
 const CHART_COLOR := Color(0.84705883, 0.34901962, 0.0627451, 0.22)
 
 var values := PackedFloat32Array()
@@ -53,28 +49,25 @@ func _draw() -> void:
 	var usable_width := chart_size.x - CHART_PADDING_X * 2.0
 	var usable_height := chart_size.y - CHART_PADDING_TOP - CHART_PADDING_BOTTOM
 
-	var min_value := values[0]
-	var max_value := values[0]
+	var value_sum := 0.0
 	for value in values:
-		min_value = minf(min_value, value)
-		max_value = maxf(max_value, value)
+		value_sum += value
+	var average_value := value_sum / float(values.size())
+	var latest_value := values[values.size() - 1]
+	var min_value := average_value - CHART_AVERAGE_VALUE_RANGE_RADIUS
+	var max_value := average_value + CHART_AVERAGE_VALUE_RANGE_RADIUS
 
-	var original_min := min_value
-	var original_max := max_value
-	if is_equal_approx(min_value, max_value):
-		min_value -= CHART_MIN_RANGE_PADDING
-		max_value += CHART_MIN_RANGE_PADDING
-	else:
-		var value_padding := maxf((max_value - min_value) * CHART_RANGE_PADDING_RATIO, CHART_MIN_RANGE_PADDING)
-		min_value -= value_padding
-		max_value += value_padding
-
-	# if original_min <= 0.0 and original_max >= 0.0:
-	# 	var baseline_y := top + _value_to_y(0.0, min_value, max_value, usable_height)
-	# 	_draw_dashed_baseline(left, baseline_y, usable_width)
+	if latest_value < min_value:
+		var underflow := min_value - latest_value
+		min_value -= underflow
+		max_value -= underflow
+	elif latest_value > max_value:
+		var overflow := latest_value - max_value
+		min_value += overflow
+		max_value += overflow
 
 	if values.size() == 1:
-		var point_y := top + _value_to_y(values[0], min_value, max_value, usable_height)
+		var point_y := top + _value_to_y(latest_value, min_value, max_value, usable_height)
 		draw_circle(Vector2(left + usable_width * 0.5, point_y), CHART_LINE_WIDTH, CHART_COLOR)
 		return
 
@@ -90,11 +83,3 @@ func _draw() -> void:
 func _value_to_y(value: float, min_value: float, max_value: float, usable_height: float) -> float:
 	var normalized := inverse_lerp(min_value, max_value, value)
 	return lerpf(usable_height, 0.0, normalized)
-
-func _draw_dashed_baseline(left: float, y: float, width: float) -> void:
-	var x := left
-	var end_x := left + width
-	while x < end_x:
-		var dash_end := minf(x + BASELINE_DASH_WIDTH, end_x)
-		draw_line(Vector2(x, y), Vector2(dash_end, y), BASELINE_COLOR, 1.0, true)
-		x += BASELINE_DASH_WIDTH + BASELINE_GAP_WIDTH
