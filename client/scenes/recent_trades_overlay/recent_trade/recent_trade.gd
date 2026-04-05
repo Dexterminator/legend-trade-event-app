@@ -7,7 +7,7 @@ const Factory := preload("res://scenes/recent_trades_overlay/recent_trade/recent
 @onready var action_label: Label = %Action
 @onready var timestamp_label: Label = %Timestamp
 @onready var symbol_label: Label = %Symbol
-@onready var asset_value_label: Label = %AssetValue
+@onready var price_label: Label = %Price
 @onready var icon_texture: TextureRect = %Icon
 @onready var size_label: Label = %Size
 @onready var closed_pnl_label: Label = %ClosedPnl
@@ -37,10 +37,13 @@ func init(trade_update: Dictionary) -> void:
 	var action: String = trade_update["action"]
 	var size_usd: float = trade_update["size_usd"]
 	var ts: int = trade_update["ts"]
-	action_label.text = action.capitalize()
+	var price: float = trade_update["price"]
+	var side: String = trade_update["side"]
+	action_label.text = action.capitalize() + ": " + side
 	timestamp_label.text = Utils.format_timestamp(ts)
 	symbol_label.text = trade_update["symbol"]
 	size_label.text = Utils.format_compact_number(size_usd)
+	price_label.text = Utils.format_compact_number(price)
 	if action == "closed":
 		var closed_pnl: float = trade_update["closed_pnl"]
 		closed_pnl_label.text = "%s%s" % ["+" if closed_pnl > 0 else "-", Utils.format_compact_number(closed_pnl)]

@@ -92,7 +92,7 @@ theme_override_fonts/font = ExtResource("3_s1726")
 theme_override_font_sizes/font_size = 22
 text = "BTC"
 
-[node name="AssetValue" type="Label" parent="PanelContainer/VBoxContainer/Row2/VBoxContainer" unique_id=11095571]
+[node name="Price" type="Label" parent="PanelContainer/VBoxContainer/Row2/VBoxContainer" unique_id=11095571]
 unique_name_in_owner = true
 modulate = Color(0.45882353, 0.45882353, 0.45882353, 1)
 layout_mode = 2

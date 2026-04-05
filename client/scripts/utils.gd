@@ -128,8 +128,9 @@ static func format_pct_label(label: Label, value: float) -> void:
 	label.text = "%s%.2f%%" % ["+" if value > 0 else "", value]
 
 static func format_timestamp(timestamp: int) -> String:
-	var total_seconds := timestamp / 1000.0
-	var seconds: float = fmod(total_seconds, 60.0)
-	var minutes: int = int(total_seconds / 60.0)
-	var time_string: String = "%d:%02d" % [minutes, seconds]
-	return time_string
+	var unix_time := int(timestamp / 1000.0)
+	var time_zone := Time.get_time_zone_from_system()
+	var offset_minutes: int = time_zone["bias"]
+	var local_unix_time := unix_time + (offset_minutes * 60)
+	var local_time := Time.get_time_dict_from_unix_time(local_unix_time)
+	return "%d:%02d" % [local_time.hour, local_time.minute]
