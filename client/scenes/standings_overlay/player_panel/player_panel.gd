@@ -13,6 +13,7 @@ extends PanelContainer
 
 var rank_delta_sign: int = 0
 var ts_rank_delta_sign_changed: float = 0
+var is_eliminated: bool = false
 
 const RANK_DELTA_RESET_TIME: float = 3 * 60.0
 
@@ -42,6 +43,9 @@ func _update(updates: Dictionary) -> void:
 	var volume: float = updates["volume_usd"]
 	Utils.format_pct_label(pnl_pct_label, pnl_pct)
 	volume_label.text = Utils.format_compact_number(volume)
+	is_eliminated = updates["is_eliminated"]
+	visible = not is_eliminated
+
 	if Delta.exceeded(ts_rank_delta_sign_changed, RANK_DELTA_RESET_TIME):
 		rank_delta_sign = 0
 		rank_delta_indicator.texture = rank_delta_textures["neutral"]

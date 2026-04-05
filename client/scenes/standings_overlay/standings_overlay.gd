@@ -15,6 +15,9 @@ func _ready() -> void:
 
 func _sort_panels_by_rank(panels: Array) -> void:
 	panels.sort_custom(func(a: PlayerPanel, b: PlayerPanel) -> bool:
+		if a.is_eliminated != b.is_eliminated:
+			return not a.is_eliminated
+
 		if a.rank != b.rank:
 			return a.rank < b.rank
 
