@@ -94,13 +94,13 @@ func animate_sort(container: VBoxContainer) -> void:
 				panel.z_index = -1
 			# Fade out old placement
 			var t := create_tween()
-			t.tween_property(panel.rank_label, "modulate:a", 0.0, 0.4
+			t.tween_property(panel.rank_container, "modulate:a", 0.0, 0.4
 			).set_trans(Tween.TRANS_CUBIC) \
 			 .set_ease(Tween.EASE_IN_OUT)
 			# After fade out, update text and fade in new placement
-			t.tween_callback(func() -> void: panel.rank_label.text = str(new_rank))
+			t.tween_callback(func() -> void: panel.set_rank_label(new_rank))
 			# Fade in new placement
-			t.tween_property(panel.rank_label, "modulate:a", 1.0, 0.4
+			t.tween_property(panel.rank_container, "modulate:a", 1.0, 0.4
 			).set_trans(Tween.TRANS_CUBIC) \
 			 .set_ease(Tween.EASE_IN_OUT)
 		else:
