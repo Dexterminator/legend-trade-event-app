@@ -33,7 +33,7 @@ func init(trade_update: Dictionary) -> void:
 	price_label.text = Utils.format_compact_number(price)
 	if action == "closed":
 		var closed_pnl: float = trade_update["closed_pnl"]
-		closed_pnl_label.text = "%s%s" % ["+" if closed_pnl > 0 else "-", Utils.format_compact_number(closed_pnl)]
+		closed_pnl_label.text = Utils.format_compact_closed_pnl(closed_pnl)
 		closed_pnl_label.modulate = Constants.GREEN if closed_pnl > 0 else Constants.RED
 	else:
 		closed_pnl_label.text = ""
