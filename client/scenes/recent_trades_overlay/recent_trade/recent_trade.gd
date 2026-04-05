@@ -3,6 +3,7 @@ class_name RecentTrade
 
 const Factory := preload("res://scenes/recent_trades_overlay/recent_trade/recent_trade.tscn")
 
+@onready var panel_container: PanelContainer = $PanelContainer
 @onready var name_label: Label = %Name
 @onready var action_label: Label = %Action
 @onready var timestamp_label: Label = %Timestamp
@@ -36,3 +37,10 @@ func init(trade_update: Dictionary) -> void:
 		closed_pnl_label.modulate = Constants.GREEN if closed_pnl > 0 else Constants.RED
 	else:
 		closed_pnl_label.text = ""
+
+
+func get_display_height() -> float:
+	if panel_container.size.y > 0.0:
+		return panel_container.size.y
+
+	return panel_container.get_combined_minimum_size().y
