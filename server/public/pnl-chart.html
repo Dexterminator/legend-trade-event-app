@@ -399,6 +399,7 @@
 							text: String(item.username || '').toUpperCase(),
 							pointX: item.renderedLastPoint.x,
 							pointY: item.renderedLastPoint.y,
+							pointRadius: item.points.length === 1 ? 6 : 7,
 							targetY: item.renderedLastPoint.y,
 						};
 					})
@@ -448,6 +449,7 @@
 					ctx.lineTo(labelTextX - 8, label.targetY);
 					ctx.stroke();
 					ctx.restore();
+					drawPoint(label.pointX, label.pointY, label.color, label.pointRadius);
 					ctx.fillStyle = label.color;
 					ctx.fillText(label.text, labelTextX, label.targetY + 0.5);
 				}
