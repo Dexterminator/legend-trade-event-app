@@ -200,7 +200,7 @@
 					return;
 				}
 
-				const layout = getLayout(canvas.clientWidth, canvas.clientHeight);
+				const layout = getLayout(canvas.clientWidth, canvas.clientHeight, prepared);
 				drawGrid(layout, prepared);
 				drawSeries(layout, prepared);
 				drawSeriesLabels(layout, prepared);
@@ -274,9 +274,25 @@
 				};
 			}
 
-			function getLayout(width, height) {
+			function getLabelGutterWidth(prepared) {
+				if (!prepared || !Array.isArray(prepared.series) || prepared.series.length === 0) {
+					return 250;
+				}
+
+				ctx.save();
+				ctx.font = LABEL_FONT;
+				const widestLabel = prepared.series.reduce((maxWidth, item) => {
+					const label = String(item.username || '').toUpperCase();
+					return Math.max(maxWidth, ctx.measureText(label).width);
+				}, 0);
+				ctx.restore();
+
+				return Math.max(250, widestLabel + 56);
+			}
+
+			function getLayout(width, height, prepared) {
 				const left = Math.max(88, width * 0.075);
-				const right = Math.max(250, width * 0.18);
+				const right = Math.max(getLabelGutterWidth(prepared), width * 0.18);
 				const top = Math.max(28, height * 0.06);
 				const bottom = Math.max(56, height * 0.12);
 				return {
@@ -331,8 +347,14 @@
 
 			function drawSeries(layout, prepared) {
 				ctx.save();
+				const clipInset = 12;
 				ctx.beginPath();
-				ctx.rect(layout.plotLeft, layout.plotTop, layout.plotWidth, layout.plotHeight);
+				ctx.rect(
+					layout.plotLeft - clipInset,
+					layout.plotTop - clipInset,
+					layout.plotWidth + clipInset * 2,
+					layout.plotHeight + clipInset * 2
+				);
 				ctx.clip();
 
 				for (const item of prepared.series) {
@@ -405,7 +427,8 @@
 				}
 
 				const labelOffsetX = 26;
-				const maxLabelRight = layout.plotRight - 8;
+				const maxLabelRight = canvas.clientWidth - 16;
+				const minLabelTextX = layout.plotRight + 18;
 				ctx.save();
 				ctx.font = LABEL_FONT;
 				ctx.fillStyle = 'rgba(255,255,255,0.92)';
@@ -414,7 +437,7 @@
 				for (const label of labels) {
 					const textWidth = ctx.measureText(label.text).width;
 					const desiredTextX = label.pointX + labelOffsetX;
-					const labelTextX = Math.min(desiredTextX, maxLabelRight - textWidth);
+					const labelTextX = Math.max(minLabelTextX, Math.min(desiredTextX, maxLabelRight - textWidth));
 					ctx.save();
 					ctx.strokeStyle = label.color;
 					ctx.globalAlpha = 0.65;
@@ -438,6 +461,8 @@
 				ctx.lineWidth = 1;
 				ctx.strokeStyle = color;
 				ctx.stroke();
+				ctx.shadowColor = 'rgba(255, 255, 255, 0.45)';
+				ctx.shadowBlur = 8;
 				ctx.fillStyle = '#ffffff';
 				ctx.beginPath();
 				ctx.arc(x, y, radius, 0, Math.PI * 2);
