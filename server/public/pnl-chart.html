@@ -276,7 +276,7 @@
 
 			function getLabelGutterWidth(prepared) {
 				if (!prepared || !Array.isArray(prepared.series) || prepared.series.length === 0) {
-					return 250;
+					return 160;
 				}
 
 				ctx.save();
@@ -287,7 +287,7 @@
 				}, 0);
 				ctx.restore();
 
-				return Math.max(250, widestLabel + 56);
+				return Math.max(160, widestLabel + 28);
 			}
 
 			function getLayout(width, height, prepared) {
@@ -427,9 +427,8 @@
 					labels[i].targetY = Math.min(labels[i].targetY, maxY);
 				}
 
-				const labelOffsetX = 26;
+				const labelOffsetX = 30;
 				const maxLabelRight = canvas.clientWidth - 16;
-				const minLabelTextX = layout.plotRight + 18;
 				ctx.save();
 				ctx.font = LABEL_FONT;
 				ctx.fillStyle = 'rgba(255,255,255,0.92)';
@@ -438,7 +437,7 @@
 				for (const label of labels) {
 					const textWidth = ctx.measureText(label.text).width;
 					const desiredTextX = label.pointX + labelOffsetX;
-					const labelTextX = Math.max(minLabelTextX, Math.min(desiredTextX, maxLabelRight - textWidth));
+					const labelTextX = Math.min(desiredTextX, maxLabelRight - textWidth);
 					ctx.save();
 					ctx.strokeStyle = label.color;
 					ctx.globalAlpha = 0.65;
