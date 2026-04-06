@@ -103,7 +103,6 @@ export interface ConnectionState {
 
 export interface CompetitionState {
     connected: ConnectedMessage | null
-    activity: ActivityItem[]
     leaderboard: LeaderboardSnapshot | null
     pnl: PnlDataset | null
     latestPnlTick: PnlTick | null
@@ -130,7 +129,6 @@ export const state: State = {
     },
     competition: {
         connected: null,
-        activity: [],
         leaderboard: null,
         pnl: null,
         latestPnlTick: null,
@@ -138,6 +136,10 @@ export const state: State = {
         lastMessageAt: null,
     },
 }
+
+const MAX_TRACKED_ACTIVITY_ITEMS = 256
+const trackedActivityById = new Map<string, ActivityItem>()
+const trackedActivityOrder: string[] = []
 
 export function patchConnectionState(partial: Partial<ConnectionState>): void {
     state.connection = {
@@ -172,9 +174,7 @@ export function applyCompetitionEnvelope(envelope: CompetitionEnvelope): void {
             return
 
         case 'activity':
-            state.competition.activity = Array.isArray(envelope.data)
-                ? envelope.data
-                : appendActivityItem(state.competition.activity, envelope.data)
+            applyActivityEnvelope(envelope.data)
             return
 
         case 'leaderboard':
@@ -207,19 +207,49 @@ function withManualTraderFields(nextTraders: LeaderboardTrader[], previousTrader
     }))
 }
 
-function appendActivityItem(activity: ActivityItem[], nextItem: ActivityItem): ActivityItem[] {
-    const existingIndex = activity.findIndex((item) => item.id === nextItem.id)
-    if (existingIndex === -1) {
-        return [...activity, nextItem]
+function applyActivityEnvelope(activity: ActivityItem[] | ActivityItem): void {
+    if (Array.isArray(activity)) {
+        replaceTrackedActivity(activity)
+        return
     }
 
-    const nextActivity = [...activity]
-    nextActivity[existingIndex] = nextItem
+    upsertTrackedActivity(activity)
+}
+
+function replaceTrackedActivity(activity: ActivityItem[]): void {
+    trackedActivityById.clear()
+    trackedActivityOrder.length = 0
+
+    const startIndex = Math.max(0, activity.length - MAX_TRACKED_ACTIVITY_ITEMS)
+    for (let index = startIndex; index < activity.length; index += 1) {
+        const item = activity[index]
+        trackedActivityById.set(item.id, item)
+        trackedActivityOrder.push(item.id)
+    }
+}
+
+function upsertTrackedActivity(nextItem: ActivityItem): void {
+    const hadExistingItem = trackedActivityById.has(nextItem.id)
+    trackedActivityById.set(nextItem.id, nextItem)
+
+    if (!hadExistingItem) {
+        trackedActivityOrder.push(nextItem.id)
+        trimTrackedActivity()
+    }
+
     broadcast({
         type: 'trade_update',
         payload: nextItem,
     })
-    return nextActivity
+}
+
+function trimTrackedActivity(): void {
+    while (trackedActivityOrder.length > MAX_TRACKED_ACTIVITY_ITEMS) {
+        const oldestId = trackedActivityOrder.shift()
+        if (oldestId !== undefined) {
+            trackedActivityById.delete(oldestId)
+        }
+    }
 }
 
 function mergeLatestTickIntoPnl(pnl: PnlDataset, tick: PnlTick | null): PnlDataset {
