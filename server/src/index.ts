@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { setTraderEliminated, state } from './state.js'
 import { createWsServer, closeWsServer, startStateBroadcast } from './wsServer.js'
-import { connectExternal, destroyExternal } from './wsExternal.js'
+import { connectExternal, destroyExternal, reconnectExternal } from './wsExternal.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -44,6 +44,11 @@ app.post('/admin/traders/:userId/elimination', (req, res) => {
     }
 
     setTraderEliminated(userId, isEliminated)
+    res.status(204).end()
+})
+
+app.post('/admin/external/reconnect', (_req, res) => {
+    reconnectExternal()
     res.status(204).end()
 })
 

@@ -57,6 +57,12 @@
 			margin-left: auto;
 		}
 
+		.toolbar-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 12px;
+		}
+
 		.pill {
 			display: inline-flex;
 			align-items: center;
@@ -88,6 +94,24 @@
 		a.pill:hover {
 			border-color: var(--accent);
 			background: rgba(127, 179, 255, 0.1);
+		}
+
+		button.pill {
+			appearance: none;
+			cursor: pointer;
+			font: inherit;
+			font-size: 14px;
+			color: var(--text);
+		}
+
+		button.pill:hover:not(:disabled) {
+			border-color: var(--accent);
+			background: rgba(127, 179, 255, 0.1);
+		}
+
+		button.pill:disabled {
+			opacity: 0.6;
+			cursor: progress;
 		}
 
 		.dot {
@@ -266,6 +290,9 @@
 			<div class="pill"><span id="status-dot" class="dot"></span><strong id="status-text">Connecting</strong>
 			</div>
 			<div class="pill">Updated <strong id="updated-at">never</strong></div>
+			<div class="toolbar-actions">
+				<button id="reconnect-external" class="pill" type="button">Reconnect</button>
+			</div>
 			<div class="toolbar-links">
 				<a class="pill" href="http://localhost:5050/index.html?overlay=standings" target="_blank"
 					rel="noreferrer">Leaderboard overlay</a>
@@ -284,9 +311,11 @@
 		const statusDotEl = document.getElementById('status-dot')
 		const statusTextEl = document.getElementById('status-text')
 		const updatedAtEl = document.getElementById('updated-at')
+		const reconnectExternalButtonEl = document.getElementById('reconnect-external')
 		const cardElements = new Map()
 		const pendingEliminationUpdates = new Set()
 		let emptyStateEl = null
+		let reconnectExternalPending = false
 
 		async function refresh() {
 			try {
@@ -299,6 +328,37 @@
 				render(nextState)
 			} catch (error) {
 				renderError(error instanceof Error ? error.message : String(error))
+			}
+		}
+
+		async function reconnectExternalFeed() {
+			if (reconnectExternalPending) {
+				return
+			}
+
+			reconnectExternalPending = true
+			reconnectExternalButtonEl.disabled = true
+			reconnectExternalButtonEl.textContent = 'Reconnecting...'
+
+			try {
+				const response = await fetch('/admin/external/reconnect', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`)
+				}
+
+				await refresh()
+			} catch (error) {
+				renderError(error instanceof Error ? error.message : String(error))
+			} finally {
+				reconnectExternalPending = false
+				reconnectExternalButtonEl.disabled = false
+				reconnectExternalButtonEl.textContent = 'Reconnect external feed'
 			}
 		}
 
@@ -553,6 +613,10 @@
 				second: '2-digit',
 			})
 		}
+
+		reconnectExternalButtonEl.addEventListener('click', () => {
+			void reconnectExternalFeed()
+		})
 
 		refresh()
 		setInterval(refresh, 1000)

@@ -17,6 +17,7 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let pingTimer: ReturnType<typeof setInterval> | null = null
 let attempt = 0
 let destroyed = false
+let suppressReconnectOnClose = false
 
 // ── Public API ─────────────────────────────────────────────────────────────────
 
@@ -37,8 +38,9 @@ export function connectExternal(): void {
 
     console.log(`[external ws] connecting to ${EXTERNAL_WS_URL} ...`)
     socket = new WebSocket(EXTERNAL_WS_URL)
+    const currentSocket = socket
 
-    socket.on('open', () => {
+    currentSocket.on('open', () => {
         attempt = 0
         startPingLoop()
         patchConnectionState({
@@ -52,7 +54,7 @@ export function connectExternal(): void {
         })
     })
 
-    socket.on('message', (raw) => {
+    currentSocket.on('message', (raw) => {
         try {
             const message = parseMessage(raw.toString())
 
@@ -80,20 +82,28 @@ export function connectExternal(): void {
         }
     })
 
-    socket.on('close', (code, reason) => {
+    currentSocket.on('close', (code, reason) => {
         console.log(`[external ws] closed (${code} ${reason.toString()})`)
         stopPingLoop()
-        socket = null
+        if (socket === currentSocket) {
+            socket = null
+        }
         patchConnectionState({
             status: 'disconnected',
             reconnectAttempt: attempt,
             disconnectedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         })
+
+        if (suppressReconnectOnClose) {
+            suppressReconnectOnClose = false
+            return
+        }
+
         scheduleReconnect()
     })
 
-    socket.on('error', (err) => {
+    currentSocket.on('error', (err) => {
         // 'close' fires after 'error', so reconnect is triggered there.
         console.error('[external ws] error:', err.message)
         patchConnectionState({
@@ -101,6 +111,32 @@ export function connectExternal(): void {
             updatedAt: new Date().toISOString(),
         })
     })
+}
+
+export function reconnectExternal(): void {
+    destroyed = false
+    attempt = 0
+
+    if (reconnectTimer !== null) {
+        clearTimeout(reconnectTimer)
+        reconnectTimer = null
+    }
+
+    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        suppressReconnectOnClose = true
+        stopPingLoop()
+        patchConnectionState({
+            url: EXTERNAL_WS_URL,
+            status: 'connecting',
+            reconnectAttempt: 0,
+            lastError: null,
+            updatedAt: new Date().toISOString(),
+        })
+        socket.terminate()
+        socket = null
+    }
+
+    connectExternal()
 }
 
 export function destroyExternal(): void {
