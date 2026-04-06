@@ -9,6 +9,8 @@ CLIENT_DIR="$SCRIPT_DIR/client"
 RELEASE_DIR="$SCRIPT_DIR/release"
 PUBLIC_DIR="$SERVER_DIR/public"
 ZIP_FILE="$SCRIPT_DIR/legend-trade-app.zip"
+AKIRA_FONT_SOURCE_DIR="$CLIENT_DIR/assets/akira_expanded"
+AKIRA_FONT_TARGET_NAME="akira_expanded"
 CUSTOM_HTML_TMP_DIR=""
 CUSTOM_HTML_FILES=()
 
@@ -51,6 +53,12 @@ if [[ -n "$CUSTOM_HTML_TMP_DIR" ]]; then
     cp "$CUSTOM_HTML_TMP_DIR/$base_name" "$RELEASE_DIR/public/$base_name"
   done
   rm -rf "$CUSTOM_HTML_TMP_DIR"
+fi
+
+if [[ -d "$AKIRA_FONT_SOURCE_DIR" ]]; then
+  rm -rf "$PUBLIC_DIR/$AKIRA_FONT_TARGET_NAME" "$RELEASE_DIR/public/$AKIRA_FONT_TARGET_NAME"
+  cp -R "$AKIRA_FONT_SOURCE_DIR" "$PUBLIC_DIR/$AKIRA_FONT_TARGET_NAME"
+  cp -R "$AKIRA_FONT_SOURCE_DIR" "$RELEASE_DIR/public/$AKIRA_FONT_TARGET_NAME"
 fi
 
 # ── 4. Assemble /release/server ───────────────────────────────────────────────
