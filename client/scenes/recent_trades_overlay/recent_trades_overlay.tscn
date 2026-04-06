@@ -2,7 +2,9 @@
 
 [ext_resource type="Script" uid="uid://m5xrl424l46m" path="res://scenes/recent_trades_overlay/recent_trades_overlay.gd" id="1_rxi47"]
 
-[node name="RecentTradesOverlay" type="Node2D" unique_id=1227232735]
+[node name="RecentTradesOverlay" type="Control" unique_id=1339884514]
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("1_rxi47")
 
 [node name="Spawn" type="Marker2D" parent="." unique_id=1707828302]

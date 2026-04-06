@@ -1,4 +1,4 @@
-extends Node2D
+extends Control
 
 @onready var standings_container: VBoxContainer = %StandingsContainer
 @onready var panels_by_player_index: Array = standings_container.get_children()

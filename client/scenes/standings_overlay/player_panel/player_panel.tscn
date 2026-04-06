@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://du2x1v0hpinxi"]
 
 [ext_resource type="Script" uid="uid://cl8pouem7yhnn" path="res://scenes/standings_overlay/player_panel/player_panel.gd" id="1_8msps"]
-[ext_resource type="Script" path="res://scenes/standings_overlay/player_panel/player_panel_sparkline.gd" id="2_7l4e1"]
 [ext_resource type="Theme" uid="uid://mdn7ofcnq8dn" path="res://assets/theme.tres" id="1_bxhcd"]
+[ext_resource type="Script" uid="uid://ktx3ua72k7wb" path="res://scenes/standings_overlay/player_panel/player_panel_sparkline.gd" id="2_7l4e1"]
 [ext_resource type="Texture2D" uid="uid://ceyw6q48hbfqi" path="res://assets/basecard.svg" id="2_l0tbx"]
 [ext_resource type="FontFile" uid="uid://cnk6su13xxbv4" path="res://assets/akira_expanded/Akira Expanded Demo.otf" id="4_bxhcd"]
 [ext_resource type="Texture2D" uid="uid://4d120o8dwwlx" path="res://assets/neutral-position.svg" id="5_r568l"]
@@ -56,9 +56,10 @@ stretch_mode = 3
 
 [node name="ProfilePicture" type="TextureRect" parent="HBoxContainer" unique_id=1286960282]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 texture = ExtResource("6_87vf4")
-expand_mode = 2
+expand_mode = 1
 stretch_mode = 4
 
 [node name="UserNameLabel" type="Label" parent="HBoxContainer" unique_id=901455862]
@@ -114,19 +115,19 @@ theme_override_font_sizes/font_size = 24
 text = "$1.08K"
 horizontal_alignment = 1
 
-[node name="PnlContainer" type="Control" parent="HBoxContainer"]
+[node name="PnlContainer" type="Control" parent="HBoxContainer" unique_id=1703548056]
 custom_minimum_size = Vector2(220, 90)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="PnlSparkline" type="Control" parent="HBoxContainer/PnlContainer"]
+[node name="PnlSparkline" type="Control" parent="HBoxContainer/PnlContainer" unique_id=854853886]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("2_7l4e1")
 
@@ -137,9 +138,8 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 0.0
-offset_bottom = 0.0
-mouse_filter = 2
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_fonts/font = ExtResource("12_l56je")
 theme_override_font_sizes/font_size = 24
 text = "+2.56%"

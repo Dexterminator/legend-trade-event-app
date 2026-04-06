@@ -69,9 +69,12 @@ func _spawn_overlay() -> void:
 				key = kv[1].to_lower().strip_edges()
 				break
 	else:
-		key = "recent_trades"
+		key = "standings"
 	if key in OVERLAYS:
-		add_child((OVERLAYS[key] as PackedScene).instantiate())
+		var overlay: Control = (OVERLAYS[key] as PackedScene).instantiate()
+		overlay.focus_mode = Control.FOCUS_NONE
+		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(overlay)
 
 func _connect_socket() -> void:
 	_socket = WebSocketPeer.new()

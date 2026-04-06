@@ -1,4 +1,4 @@
-extends Node2D
+extends Control
 
 @onready var spawn_point: Marker2D = %Spawn
 var recent_trades: Array[RecentTrade] = []

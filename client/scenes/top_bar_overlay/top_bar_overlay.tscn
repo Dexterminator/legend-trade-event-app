@@ -10,10 +10,13 @@ default_font_size = 13
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_h4y3j"]
 bg_color = Color(0.92941177, 0.48235294, 0.1882353, 1)
 
-[node name="TopBarOverlay" type="Node2D" unique_id=347718617]
+[node name="TopBarOverlay" type="Control" unique_id=102279403]
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("1_cubve")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=463310071]
+layout_mode = 0
 offset_right = 1912.0
 offset_bottom = 74.0
 theme = SubResource("Theme_h4y3j")
