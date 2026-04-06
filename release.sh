@@ -9,8 +9,8 @@ CLIENT_DIR="$SCRIPT_DIR/client"
 RELEASE_DIR="$SCRIPT_DIR/release"
 PUBLIC_DIR="$SERVER_DIR/public"
 ZIP_FILE="$SCRIPT_DIR/legend-trade-app.zip"
-ADMIN_FILE="$PUBLIC_DIR/admin.html"
-TMP_ADMIN_FILE=""
+CUSTOM_HTML_TMP_DIR=""
+CUSTOM_HTML_FILES=()
 
 # ── 1. Build server ────────────────────────────────────────────────────────────
 echo "==> [1/5] Building server …"
@@ -29,19 +29,28 @@ mkdir -p "$RELEASE_DIR/public"
 
 # ── 3. Copy web export into server/public ─────────────────────────────────────
 echo "==> [3/5] Copying web export into server/public …"
-if [[ -f "$ADMIN_FILE" ]]; then
-  TMP_ADMIN_FILE="$(mktemp)"
-  cp "$ADMIN_FILE" "$TMP_ADMIN_FILE"
+if [[ -d "$PUBLIC_DIR" ]]; then
+  CUSTOM_HTML_TMP_DIR="$(mktemp -d)"
+  while IFS= read -r -d '' html_file; do
+    base_name="$(basename "$html_file")"
+    if [[ "$base_name" == "index.html" ]]; then
+      continue
+    fi
+    cp "$html_file" "$CUSTOM_HTML_TMP_DIR/$base_name"
+    CUSTOM_HTML_FILES+=("$base_name")
+  done < <(find "$PUBLIC_DIR" -maxdepth 1 -type f -name '*.html' -print0)
 fi
 
 rm -rf "$PUBLIC_DIR"
 mkdir -p "$PUBLIC_DIR"
 cp -r "$RELEASE_DIR/public/." "$PUBLIC_DIR/"
 
-if [[ -n "$TMP_ADMIN_FILE" ]]; then
-  cp "$TMP_ADMIN_FILE" "$ADMIN_FILE"
-  cp "$TMP_ADMIN_FILE" "$RELEASE_DIR/public/admin.html"
-  rm -f "$TMP_ADMIN_FILE"
+if [[ -n "$CUSTOM_HTML_TMP_DIR" ]]; then
+  for base_name in "${CUSTOM_HTML_FILES[@]}"; do
+    cp "$CUSTOM_HTML_TMP_DIR/$base_name" "$PUBLIC_DIR/$base_name"
+    cp "$CUSTOM_HTML_TMP_DIR/$base_name" "$RELEASE_DIR/public/$base_name"
+  done
+  rm -rf "$CUSTOM_HTML_TMP_DIR"
 fi
 
 # ── 4. Assemble /release/server ───────────────────────────────────────────────

@@ -1,14 +1,17 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import type { Server } from 'node:http'
+import { URL } from 'node:url'
 import { state } from './state.js'
 
-let wss: WebSocketServer | null = null
-let leaderboardInterval: ReturnType<typeof setInterval> | null = null
+let appWss: WebSocketServer | null = null
+let pnlChartWss: WebSocketServer | null = null
+let broadcastInterval: ReturnType<typeof setInterval> | null = null
 
 export function createWsServer(server: Server): WebSocketServer {
-    wss = new WebSocketServer({ server, path: '/ws' })
+    appWss = new WebSocketServer({ noServer: true })
+    pnlChartWss = new WebSocketServer({ noServer: true })
 
-    wss.on('connection', (ws: WebSocket) => {
+    appWss.on('connection', (ws: WebSocket) => {
         ws.send(JSON.stringify({
             type: 'connected',
             payload: {
@@ -25,36 +28,86 @@ export function createWsServer(server: Server): WebSocketServer {
         })
     })
 
-    wss.on('error', (err) => {
+    pnlChartWss.on('connection', (ws: WebSocket) => {
+        ws.send(JSON.stringify({
+            type: 'connected',
+            payload: {
+                message: 'Connection successful',
+            },
+        }))
+
+        ws.on('error', (err) => {
+            console.error('[pnl chart ws client] error:', err.message)
+        })
+    })
+
+    appWss.on('error', (err) => {
         console.error('[ws server] error:', err.message)
     })
 
-    return wss
+    pnlChartWss.on('error', (err) => {
+        console.error('[pnl chart ws server] error:', err.message)
+    })
+
+    server.on('upgrade', (request, socket, head) => {
+        const pathname = new URL(request.url ?? '/', 'http://localhost').pathname
+        const target = pathname === '/ws'
+            ? appWss
+            : pathname === '/ws-pnl-chart'
+                ? pnlChartWss
+                : null
+
+        if (target === null) {
+            socket.destroy()
+            return
+        }
+
+        target.handleUpgrade(request, socket, head, (ws) => {
+            target.emit('connection', ws, request)
+        })
+    })
+
+    return appWss
 }
 
 export function closeWsServer(): void {
-    if (leaderboardInterval !== null) {
-        clearInterval(leaderboardInterval)
-        leaderboardInterval = null
+    if (broadcastInterval !== null) {
+        clearInterval(broadcastInterval)
+        broadcastInterval = null
     }
-    if (wss) {
-        for (const client of wss.clients) {
+    if (appWss) {
+        for (const client of appWss.clients) {
             client.terminate()
         }
-        wss.close()
-        wss = null
+        appWss.close()
+        appWss = null
+    }
+    if (pnlChartWss) {
+        for (const client of pnlChartWss.clients) {
+            client.terminate()
+        }
+        pnlChartWss.close()
+        pnlChartWss = null
     }
 }
 
 export function startStateBroadcast(): void {
-    if (leaderboardInterval !== null) {
-        clearInterval(leaderboardInterval)
+    if (broadcastInterval !== null) {
+        clearInterval(broadcastInterval)
     }
 
-    leaderboardInterval = setInterval(() => {
+    broadcastInterval = setInterval(() => {
         broadcast({
             type: 'leaderboard',
             payload: state.competition.leaderboard,
+        })
+
+        broadcastPnlChart({
+            type: 'pnl_chart',
+            payload: {
+                leaderboard: state.competition.leaderboard,
+                pnl: state.competition.pnl,
+            },
         })
     }, 500)
 }
@@ -63,9 +116,19 @@ export function startStateBroadcast(): void {
  * Broadcast a JSON-serialisable message to every connected client.
  */
 export function broadcast(data: object): void {
-    if (!wss) return
+    if (!appWss) return
     const msg = JSON.stringify(data)
-    for (const client of wss.clients) {
+    for (const client of appWss.clients) {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(msg)
+        }
+    }
+}
+
+export function broadcastPnlChart(data: object): void {
+    if (!pnlChartWss) return
+    const msg = JSON.stringify(data)
+    for (const client of pnlChartWss.clients) {
         if (client.readyState === WebSocket.OPEN) {
             client.send(msg)
         }

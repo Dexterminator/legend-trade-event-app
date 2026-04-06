@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Competition PnL Chart</title>
+	<style>
+		:root {
+			--text: rgba(255, 255, 255, 0.9);
+			--muted: rgba(255, 255, 255, 0.42);
+			--grid: rgba(255, 255, 255, 0.1);
+			--axis: rgba(255, 255, 255, 0.16);
+			--panel: rgba(22, 25, 29, 0.78);
+			--panel-border: rgba(255, 255, 255, 0.08);
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			/* background: transparent; */
+			background: rgb(31, 31, 31);
+			overflow: hidden;
+			font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+		}
+
+		body {
+			position: relative;
+			color: var(--text);
+		}
+
+		canvas {
+			display: block;
+			width: 100vw;
+			height: 100vh;
+		}
+
+		.status {
+			position: absolute;
+			top: 18px;
+			right: 18px;
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 10px 12px;
+			border-radius: 999px;
+			border: 1px solid var(--panel-border);
+			background: var(--panel);
+			font-size: 12px;
+			letter-spacing: 0.04em;
+			text-transform: uppercase;
+			backdrop-filter: blur(10px);
+		}
+
+		.status[hidden] {
+			display: none;
+		}
+
+		.status-dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 999px;
+			background: #ff7b72;
+		}
+
+		.status.connected .status-dot {
+			background: #58d68d;
+		}
+	</style>
+</head>
+
+<body>
+	<canvas id="chart" aria-label="Competition pnl chart overlay"></canvas>
+	<div id="status" class="status" hidden>
+		<span class="status-dot"></span>
+		<span id="statusText">Connecting</span>
+	</div>
+
+	<script>
+		(() => {
+			const WINDOW_MS = 30 * 60 * 1000;
+			const FALLBACK_COLORS = ['#ff8a1f', '#4ade80', '#e879f9', '#22d3ee', '#60a5fa', '#f97316', '#fde047', '#7c3aed'];
+			const canvas = document.getElementById('chart');
+			const ctx = canvas.getContext('2d');
+			const statusEl = document.getElementById('status');
+			const statusTextEl = document.getElementById('statusText');
+
+			let socket = null;
+			let reconnectDelay = 1000;
+			let reconnectTimer = null;
+			let latestPayload = null;
+			let latestRenderToken = 0;
+
+			const timeFormatter = new Intl.DateTimeFormat(undefined, {
+				hour: 'numeric',
+				minute: '2-digit',
+			});
+
+			function setStatus(text, connected, visible = true) {
+				statusTextEl.textContent = text;
+				statusEl.classList.toggle('connected', connected);
+				statusEl.hidden = !visible;
+			}
+
+			function getWsUrl() {
+				const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+				return `${protocol}//${window.location.host}/ws-pnl-chart`;
+			}
+
+			function connect() {
+				if (reconnectTimer !== null) {
+					window.clearTimeout(reconnectTimer);
+					reconnectTimer = null;
+				}
+
+				setStatus('Connecting', false, true);
+				socket = new WebSocket(getWsUrl());
+
+				socket.addEventListener('open', () => {
+					reconnectDelay = 1000;
+					setStatus('Live', true, false);
+				});
+
+				socket.addEventListener('message', (event) => {
+					let message;
+					try {
+						message = JSON.parse(event.data);
+					} catch (error) {
+						console.error('[pnl-chart] Failed to parse message', error);
+						return;
+					}
+
+					if (message.type === 'pnl_chart') {
+						latestPayload = message.payload;
+						renderSoon();
+					}
+				});
+
+				socket.addEventListener('close', () => {
+					scheduleReconnect();
+				});
+
+				socket.addEventListener('error', () => {
+					if (socket && socket.readyState !== WebSocket.CLOSED) {
+						socket.close();
+					}
+				});
+			}
+
+			function scheduleReconnect() {
+				setStatus(`Reconnecting in ${(reconnectDelay / 1000).toFixed(1)}s`, false, true);
+				reconnectTimer = window.setTimeout(() => {
+					reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+					connect();
+				}, reconnectDelay);
+			}
+
+			function resizeCanvas() {
+				const dpr = window.devicePixelRatio || 1;
+				const width = Math.max(1, window.innerWidth);
+				const height = Math.max(1, window.innerHeight);
+				canvas.width = Math.round(width * dpr);
+				canvas.height = Math.round(height * dpr);
+				canvas.style.width = `${width}px`;
+				canvas.style.height = `${height}px`;
+				ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+			}
+
+			function renderSoon() {
+				latestRenderToken += 1;
+				const token = latestRenderToken;
+				window.requestAnimationFrame(() => {
+					if (token !== latestRenderToken) {
+						return;
+					}
+					render();
+				});
+			}
+
+			function render() {
+				resizeCanvas();
+				ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+				const prepared = prepareChartData(latestPayload);
+				if (prepared === null) {
+					drawEmptyState();
+					return;
+				}
+
+				const layout = getLayout(canvas.clientWidth, canvas.clientHeight);
+				drawGrid(layout, prepared);
+				drawSeries(layout, prepared);
+				drawSeriesLabels(layout, prepared);
+			}
+
+			function drawEmptyState() {
+				ctx.save();
+				ctx.fillStyle = 'rgba(255,255,255,0.45)';
+				ctx.font = '500 16px Segoe UI, sans-serif';
+				ctx.textAlign = 'center';
+				ctx.fillText('Waiting for PnL data…', canvas.clientWidth / 2, canvas.clientHeight / 2);
+				ctx.restore();
+			}
+
+			function prepareChartData(payload) {
+				if (!payload || !payload.leaderboard || !payload.pnl) {
+					return null;
+				}
+
+				const traders = Array.isArray(payload.leaderboard.traders) ? payload.leaderboard.traders : [];
+				const visibleTraders = traders.filter((trader) => trader && trader.is_eliminated !== true);
+				const seriesList = [];
+				for (const trader of visibleTraders) {
+					const pnlTrader = payload.pnl.traders?.[trader.user_id];
+					if (!pnlTrader || !Array.isArray(pnlTrader.series) || pnlTrader.series.length === 0) {
+						continue;
+					}
+					seriesList.push({
+						userId: trader.user_id,
+						username: trader.username,
+						color: pnlTrader.color || FALLBACK_COLORS[seriesList.length % FALLBACK_COLORS.length],
+						series: pnlTrader.series.slice().sort((left, right) => left.ts - right.ts),
+					});
+				}
+
+				if (seriesList.length === 0) {
+					return null;
+				}
+
+				const windowStart = Math.min(...seriesList.map((item) => item.series[0].ts));
+				const windowEnd = windowStart + WINDOW_MS;
+				const filteredSeries = seriesList
+					.map((item) => ({
+						...item,
+						points: item.series.filter((point) => point.ts >= windowStart && point.ts <= windowEnd),
+					}))
+					.filter((item) => item.points.length > 0);
+
+				if (filteredSeries.length === 0) {
+					return null;
+				}
+
+				const pnlValues = filteredSeries.flatMap((item) => item.points.map((point) => point.pnl_pct));
+				let yMin = Math.min(0, ...pnlValues);
+				let yMax = Math.max(0, ...pnlValues);
+				if (yMin === yMax) {
+					yMin -= 1;
+					yMax += 1;
+				} else {
+					const padding = Math.max((yMax - yMin) * 0.12, 0.8);
+					yMin -= padding;
+					yMax += padding;
+				}
+
+				return {
+					series: filteredSeries,
+					windowStart,
+					windowEnd,
+					yMin,
+					yMax,
+				};
+			}
+
+			function getLayout(width, height) {
+				const left = Math.max(88, width * 0.075);
+				const right = Math.max(250, width * 0.18);
+				const top = Math.max(28, height * 0.06);
+				const bottom = Math.max(56, height * 0.12);
+				return {
+					left,
+					right,
+					top,
+					bottom,
+					plotLeft: left,
+					plotRight: width - right,
+					plotTop: top,
+					plotBottom: height - bottom,
+					plotWidth: Math.max(1, width - left - right),
+					plotHeight: Math.max(1, height - top - bottom),
+				};
+			}
+
+			function drawGrid(layout, prepared) {
+				ctx.save();
+				ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+				ctx.lineWidth = 2;
+				ctx.fillStyle = 'rgba(255,255,255,0.5)';
+				ctx.font = '500 12px Segoe UI, sans-serif';
+				ctx.textAlign = 'right';
+				ctx.textBaseline = 'middle';
+
+				const yTicks = getYTicks(prepared.yMin, prepared.yMax, 6);
+				for (const tick of yTicks) {
+					const y = toY(tick, layout, prepared);
+					if (Math.abs(tick) < 0.0001) {
+						ctx.setLineDash([4, 8]);
+						ctx.beginPath();
+						ctx.moveTo(layout.plotLeft, y);
+						ctx.lineTo(layout.plotRight, y);
+						ctx.stroke();
+						ctx.setLineDash([]);
+					}
+					ctx.fillText(`${tick.toFixed(1)}%`, layout.plotLeft - 14, y);
+				}
+
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'top';
+				const xTickCount = 7;
+				for (let i = 0; i < xTickCount; i += 1) {
+					const ratio = xTickCount === 1 ? 0 : i / (xTickCount - 1);
+					const ts = prepared.windowStart + ratio * (prepared.windowEnd - prepared.windowStart);
+					const x = layout.plotLeft + ratio * layout.plotWidth;
+					ctx.fillText(formatTime(ts), x, layout.plotBottom + 14);
+				}
+
+				ctx.restore();
+			}
+
+			function drawSeries(layout, prepared) {
+				ctx.save();
+				ctx.beginPath();
+				ctx.rect(layout.plotLeft, layout.plotTop, layout.plotWidth, layout.plotHeight);
+				ctx.clip();
+
+				for (const item of prepared.series) {
+					const points = item.points.map((point) => ({
+						x: toX(point.ts, layout, prepared),
+						y: toY(point.pnl_pct, layout, prepared),
+						data: point,
+					}));
+
+					if (points.length === 1) {
+						drawPoint(points[0].x, points[0].y, item.color, 6);
+						continue;
+					}
+
+					ctx.lineCap = 'round';
+					ctx.lineJoin = 'round';
+					ctx.strokeStyle = item.color;
+					ctx.lineWidth = 1.0;
+					ctx.beginPath();
+					ctx.moveTo(points[0].x, points[0].y);
+					for (let i = 1; i < points.length; i += 1) {
+						ctx.lineTo(points[i].x, points[i].y);
+					}
+					ctx.stroke();
+
+					const lastPoint = points[points.length - 1];
+					drawPoint(lastPoint.x, lastPoint.y, item.color, 7);
+					item.renderedLastPoint = lastPoint;
+				}
+
+				ctx.restore();
+			}
+
+			function drawSeriesLabels(layout, prepared) {
+				const labels = prepared.series
+					.map((item) => {
+						if (!item.renderedLastPoint) {
+							return null;
+						}
+						return {
+							color: item.color,
+							text: String(item.username || '').toUpperCase(),
+							value: item.renderedLastPoint.data.pnl_pct,
+							pointX: item.renderedLastPoint.x,
+							pointY: item.renderedLastPoint.y,
+							targetY: item.renderedLastPoint.y,
+						};
+					})
+					.filter(Boolean)
+					.sort((left, right) => left.targetY - right.targetY);
+
+				if (labels.length === 0) {
+					return;
+				}
+
+				const labelHeight = 30;
+				const gap = 10;
+				const topBound = layout.plotTop + labelHeight / 2;
+				const bottomBound = layout.plotBottom - labelHeight / 2;
+
+				for (let i = 0; i < labels.length; i += 1) {
+					const previous = labels[i - 1];
+					const minY = previous ? previous.targetY + labelHeight + gap : topBound;
+					labels[i].targetY = Math.max(labels[i].targetY, minY);
+				}
+
+				for (let i = labels.length - 1; i >= 0; i -= 1) {
+					const next = labels[i + 1];
+					const maxY = next ? next.targetY - (labelHeight + gap) : bottomBound;
+					labels[i].targetY = Math.min(labels[i].targetY, maxY);
+				}
+
+				const labelX = layout.plotRight + 26;
+				ctx.save();
+				ctx.font = '700 12px Segoe UI, sans-serif';
+				ctx.textBaseline = 'middle';
+				for (const label of labels) {
+					const textWidth = ctx.measureText(label.text).width;
+					const boxWidth = Math.max(120, textWidth + 40);
+					const boxHeight = labelHeight;
+					const boxY = label.targetY - boxHeight / 2;
+
+					ctx.strokeStyle = label.color;
+					ctx.lineWidth = 1.5;
+					ctx.beginPath();
+					ctx.moveTo(label.pointX, label.pointY);
+					ctx.lineTo(labelX - 10, label.targetY);
+					ctx.stroke();
+
+					ctx.fillStyle = 'rgba(17, 20, 24, 0.82)';
+					ctx.strokeStyle = `${label.color}99`;
+					roundRect(labelX, boxY, boxWidth, boxHeight, 8);
+					ctx.fill();
+					ctx.stroke();
+
+					drawPoint(labelX - 18, label.targetY, label.color, 5.5);
+
+					ctx.fillStyle = label.color;
+					ctx.textAlign = 'left';
+					ctx.fillText(label.text, labelX + 10, label.targetY + 0.5);
+				}
+				ctx.restore();
+			}
+
+			function drawPoint(x, y, color, radius) {
+				ctx.save();
+				ctx.fillStyle = `${color}55`;
+				ctx.beginPath();
+				ctx.arc(x, y, radius * 2.2, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillStyle = '#ffffff';
+				ctx.beginPath();
+				ctx.arc(x, y, radius, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.restore();
+			}
+
+			function roundRect(x, y, width, height, radius) {
+				ctx.beginPath();
+				ctx.moveTo(x + radius, y);
+				ctx.arcTo(x + width, y, x + width, y + height, radius);
+				ctx.arcTo(x + width, y + height, x, y + height, radius);
+				ctx.arcTo(x, y + height, x, y, radius);
+				ctx.arcTo(x, y, x + width, y, radius);
+				ctx.closePath();
+			}
+
+			function toX(ts, layout, prepared) {
+				const span = prepared.windowEnd - prepared.windowStart || 1;
+				return layout.plotLeft + ((ts - prepared.windowStart) / span) * layout.plotWidth;
+			}
+
+			function toY(value, layout, prepared) {
+				const range = prepared.yMax - prepared.yMin || 1;
+				const ratio = (value - prepared.yMin) / range;
+				return layout.plotBottom - ratio * layout.plotHeight;
+			}
+
+			function niceStep(min, max, count) {
+				const rough = Math.abs(max - min) / Math.max(1, count);
+				const power = Math.pow(10, Math.floor(Math.log10(rough || 1)));
+				const fraction = rough / power;
+				if (fraction <= 1) return power;
+				if (fraction <= 2) return 2 * power;
+				if (fraction <= 5) return 5 * power;
+				return 10 * power;
+			}
+
+			function getYTicks(min, max, count) {
+				const step = niceStep(min, max, count);
+				const start = Math.ceil(min / step) * step;
+				const ticks = [];
+				for (let value = start; value <= max + step * 0.5; value += step) {
+					ticks.push(Number(value.toFixed(6)));
+				}
+				return ticks;
+			}
+
+			function formatTime(ts) {
+				return timeFormatter.format(new Date(ts)).replace(' ', '');
+			}
+
+			window.addEventListener('resize', renderSoon);
+			connect();
+			render();
+		})();
+	</script>
+</body>
+
+</html>

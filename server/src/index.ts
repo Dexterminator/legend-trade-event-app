@@ -21,6 +21,10 @@ app.get('/', (_req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, 'admin.html'))
 })
 
+app.get('/pnl-chart', (_req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, 'pnl-chart.html'))
+})
+
 app.get('/debug/state', (_req, res) => {
     res.json(state)
 })

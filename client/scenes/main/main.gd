@@ -99,6 +99,8 @@ func _handle_message(raw: String) -> void:
 	var payload: Dictionary = data.get("payload", {})
 
 	match msg_type:
+		"connected":
+			pass
 		"leaderboard":
 				SignalBus.standings_updated.emit(payload)
 		"trade_update":
