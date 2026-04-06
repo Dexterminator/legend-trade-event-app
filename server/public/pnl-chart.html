@@ -46,47 +46,11 @@
 			width: 100vw;
 			height: 100vh;
 		}
-
-		.status {
-			position: absolute;
-			top: 18px;
-			right: 18px;
-			display: inline-flex;
-			align-items: center;
-			gap: 8px;
-			padding: 10px 12px;
-			border-radius: 999px;
-			border: 1px solid var(--panel-border);
-			background: var(--panel);
-			font-size: 12px;
-			letter-spacing: 0.04em;
-			text-transform: uppercase;
-			backdrop-filter: blur(10px);
-		}
-
-		.status[hidden] {
-			display: none;
-		}
-
-		.status-dot {
-			width: 8px;
-			height: 8px;
-			border-radius: 999px;
-			background: #ff7b72;
-		}
-
-		.status.connected .status-dot {
-			background: #58d68d;
-		}
 	</style>
 </head>
 
 <body>
 	<canvas id="chart" aria-label="Competition pnl chart overlay"></canvas>
-	<div id="status" class="status" hidden>
-		<span class="status-dot"></span>
-		<span id="statusText">Connecting</span>
-	</div>
 
 	<script>
 		(() => {
@@ -95,8 +59,6 @@
 			const FALLBACK_COLORS = ['#ff8a1f', '#4ade80', '#e879f9', '#22d3ee', '#60a5fa', '#f97316', '#fde047', '#7c3aed'];
 			const canvas = document.getElementById('chart');
 			const ctx = canvas.getContext('2d');
-			const statusEl = document.getElementById('status');
-			const statusTextEl = document.getElementById('statusText');
 			const LABEL_FONT = '12px "Akira Expanded", sans-serif';
 
 			let socket = null;
@@ -114,12 +76,6 @@
 				minute: '2-digit',
 			});
 
-			function setStatus(text, connected, visible = true) {
-				statusTextEl.textContent = text;
-				statusEl.classList.toggle('connected', connected);
-				statusEl.hidden = !visible;
-			}
-
 			function getWsUrl() {
 				const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 				return `${protocol}//${window.location.host}/ws-pnl-chart`;
@@ -130,13 +86,10 @@
 					window.clearTimeout(reconnectTimer);
 					reconnectTimer = null;
 				}
-
-				setStatus('Connecting', false, true);
 				socket = new WebSocket(getWsUrl());
 
 				socket.addEventListener('open', () => {
 					reconnectDelay = 1000;
-					setStatus('Live', true, false);
 				});
 
 				socket.addEventListener('message', (event) => {
@@ -165,7 +118,6 @@
 			}
 
 			function scheduleReconnect() {
-				setStatus(`Reconnecting in ${(reconnectDelay / 1000).toFixed(1)}s`, false, true);
 				reconnectTimer = window.setTimeout(() => {
 					reconnectDelay = Math.min(reconnectDelay * 2, 30000);
 					connect();
@@ -214,12 +166,7 @@
 			}
 
 			function drawEmptyState() {
-				ctx.save();
-				ctx.fillStyle = 'rgba(255,255,255,0.45)';
-				ctx.font = '500 16px Segoe UI, sans-serif';
-				ctx.textAlign = 'center';
-				ctx.fillText('Waiting for PnL data…', canvas.clientWidth / 2, canvas.clientHeight / 2);
-				ctx.restore();
+				return;
 			}
 
 			function prepareChartData(payload, frameDeltaMs) {
