@@ -91,6 +91,7 @@
 	<script>
 		(() => {
 			const WINDOW_MS = 30 * 60 * 1000;
+			const RENDER_DELAY_MS = 2 * 1000;
 			const FALLBACK_COLORS = ['#ff8a1f', '#4ade80', '#e879f9', '#22d3ee', '#60a5fa', '#f97316', '#fde047', '#7c3aed'];
 			const canvas = document.getElementById('chart');
 			const ctx = canvas.getContext('2d');
@@ -102,7 +103,11 @@
 			let reconnectDelay = 1000;
 			let reconnectTimer = null;
 			let latestPayload = null;
-			let latestRenderToken = 0;
+			let playheadTs = null;
+			let lastFrameAt = null;
+			let lastCanvasWidth = 0;
+			let lastCanvasHeight = 0;
+			let lastCanvasDpr = 0;
 
 			const timeFormatter = new Intl.DateTimeFormat(undefined, {
 				hour: 'numeric',
@@ -145,7 +150,6 @@
 
 					if (message.type === 'pnl_chart') {
 						latestPayload = message.payload;
-						renderSoon();
 					}
 				});
 
@@ -168,33 +172,36 @@
 				}, reconnectDelay);
 			}
 
-			function resizeCanvas() {
+			function resizeCanvasIfNeeded() {
 				const dpr = window.devicePixelRatio || 1;
 				const width = Math.max(1, window.innerWidth);
 				const height = Math.max(1, window.innerHeight);
+				if (width === lastCanvasWidth && height === lastCanvasHeight && dpr === lastCanvasDpr) {
+					return;
+				}
+
 				canvas.width = Math.round(width * dpr);
 				canvas.height = Math.round(height * dpr);
 				canvas.style.width = `${width}px`;
 				canvas.style.height = `${height}px`;
 				ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+				lastCanvasWidth = width;
+				lastCanvasHeight = height;
+				lastCanvasDpr = dpr;
 			}
 
-			function renderSoon() {
-				latestRenderToken += 1;
-				const token = latestRenderToken;
-				window.requestAnimationFrame(() => {
-					if (token !== latestRenderToken) {
-						return;
-					}
-					render();
-				});
+			function renderFrame(frameAt) {
+				const frameDeltaMs = lastFrameAt === null ? 0 : frameAt - lastFrameAt;
+				lastFrameAt = frameAt;
+				render(frameDeltaMs);
+				window.requestAnimationFrame(renderFrame);
 			}
 
-			function render() {
-				resizeCanvas();
+			function render(frameDeltaMs) {
+				resizeCanvasIfNeeded();
 				ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
-				const prepared = prepareChartData(latestPayload);
+				const prepared = prepareChartData(latestPayload, frameDeltaMs);
 				if (prepared === null) {
 					drawEmptyState();
 					return;
@@ -215,8 +222,9 @@
 				ctx.restore();
 			}
 
-			function prepareChartData(payload) {
+			function prepareChartData(payload, frameDeltaMs) {
 				if (!payload || !payload.leaderboard || !payload.pnl) {
+					playheadTs = null;
 					return null;
 				}
 
@@ -250,6 +258,27 @@
 					.filter((item) => item.points.length > 0);
 
 				if (filteredSeries.length === 0) {
+					playheadTs = null;
+					return null;
+				}
+
+				const latestKnownTs = Math.max(...filteredSeries.map((item) => item.points[item.points.length - 1].ts));
+				const targetPlayheadTs = Math.max(windowStart, Math.min(windowEnd, latestKnownTs - RENDER_DELAY_MS));
+
+				if (playheadTs === null || playheadTs < windowStart || playheadTs > windowEnd || playheadTs > latestKnownTs) {
+					playheadTs = targetPlayheadTs;
+				} else {
+					playheadTs = Math.min(playheadTs + frameDeltaMs, targetPlayheadTs);
+				}
+
+				const animatedSeries = filteredSeries
+					.map((item) => ({
+						...item,
+						points: getAnimatedSeriesPoints(item.points, playheadTs),
+					}))
+					.filter((item) => item.points.length > 0);
+
+				if (animatedSeries.length === 0) {
 					return null;
 				}
 
@@ -266,11 +295,55 @@
 				}
 
 				return {
-					series: filteredSeries,
+					series: animatedSeries,
 					windowStart,
 					windowEnd,
+					playheadTs,
 					yMin,
 					yMax,
+				};
+			}
+
+			function getAnimatedSeriesPoints(points, playbackTs) {
+				if (!Array.isArray(points) || points.length === 0) {
+					return [];
+				}
+
+				if (playbackTs <= points[0].ts) {
+					return points[0].ts === playbackTs ? [points[0]] : [];
+				}
+
+				const animatedPoints = [];
+				let previousPoint = null;
+
+				for (const point of points) {
+					if (point.ts <= playbackTs) {
+						animatedPoints.push(point);
+						previousPoint = point;
+						continue;
+					}
+
+					if (previousPoint !== null && previousPoint.ts < playbackTs) {
+						animatedPoints.push(interpolateSeriesPoint(previousPoint, point, playbackTs));
+					}
+
+					break;
+				}
+
+				return animatedPoints;
+			}
+
+			function interpolateSeriesPoint(previousPoint, nextPoint, targetTs) {
+				const span = nextPoint.ts - previousPoint.ts;
+				if (span <= 0) {
+					return previousPoint;
+				}
+
+				const ratio = (targetTs - previousPoint.ts) / span;
+				return {
+					ts: targetTs,
+					equity: previousPoint.equity + (nextPoint.equity - previousPoint.equity) * ratio,
+					pnl_pct: previousPoint.pnl_pct + (nextPoint.pnl_pct - previousPoint.pnl_pct) * ratio,
 				};
 			}
 
@@ -506,14 +579,16 @@
 				return timeFormatter.format(new Date(ts)).replace(' ', '');
 			}
 
-			window.addEventListener('resize', renderSoon);
+			window.addEventListener('resize', () => {
+				lastCanvasWidth = 0;
+			});
 			if (document.fonts && document.fonts.load) {
 				document.fonts.load(LABEL_FONT).then(() => {
-					renderSoon();
+					lastCanvasWidth = 0;
 				});
 			}
 			connect();
-			render();
+			window.requestAnimationFrame(renderFrame);
 		})();
 	</script>
 </body>
