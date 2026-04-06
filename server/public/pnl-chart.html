@@ -510,7 +510,7 @@
 				for (const label of labels) {
 					const textWidth = ctx.measureText(label.text).width;
 					const desiredTextX = label.pointX + labelOffsetX;
-					const labelTextX = Math.min(desiredTextX, maxLabelRight - textWidth);
+					label.textX = Math.min(desiredTextX, maxLabelRight - textWidth);
 					ctx.save();
 					ctx.strokeStyle = label.color;
 					ctx.globalAlpha = 0.65;
@@ -518,12 +518,16 @@
 					ctx.setLineDash([4, 4]);
 					ctx.beginPath();
 					ctx.moveTo(label.pointX, label.pointY);
-					ctx.lineTo(labelTextX - 8, label.targetY);
+					ctx.lineTo(label.textX - 8, label.targetY);
 					ctx.stroke();
 					ctx.restore();
-					drawPoint(label.pointX, label.pointY, label.color, label.pointRadius);
 					ctx.fillStyle = label.color;
-					ctx.fillText(label.text, labelTextX, label.targetY + 0.5);
+					ctx.fillText(label.text, label.textX, label.targetY + 0.5);
+				}
+
+				const dotsByDepth = [...labels].sort((left, right) => right.pointY - left.pointY);
+				for (const label of dotsByDepth) {
+					drawPoint(label.pointX, label.pointY, label.color, label.pointRadius);
 				}
 				ctx.restore();
 			}
