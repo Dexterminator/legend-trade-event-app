@@ -6,6 +6,12 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Competition PnL Chart</title>
 	<style>
+		@font-face {
+			font-family: 'Akira Expanded';
+			src: url('./akira_expanded/Akira%20Expanded%20Demo.otf') format('opentype');
+			font-display: swap;
+		}
+
 		:root {
 			--text: rgba(255, 255, 255, 0.9);
 			--muted: rgba(255, 255, 255, 0.42);
@@ -90,6 +96,7 @@
 			const ctx = canvas.getContext('2d');
 			const statusEl = document.getElementById('status');
 			const statusTextEl = document.getElementById('statusText');
+			const LABEL_FONT = '12px "Akira Expanded", sans-serif';
 
 			let socket = null;
 			let reconnectDelay = 1000;
@@ -368,7 +375,6 @@
 						return {
 							color: item.color,
 							text: String(item.username || '').toUpperCase(),
-							value: item.renderedLastPoint.data.pnl_pct,
 							pointX: item.renderedLastPoint.x,
 							pointY: item.renderedLastPoint.y,
 							targetY: item.renderedLastPoint.y,
@@ -398,59 +404,45 @@
 					labels[i].targetY = Math.min(labels[i].targetY, maxY);
 				}
 
-				const labelX = layout.plotRight + 26;
+				const labelOffsetX = 26;
+				const maxLabelRight = layout.plotRight - 8;
 				ctx.save();
-				ctx.font = '700 12px Segoe UI, sans-serif';
+				ctx.font = LABEL_FONT;
+				ctx.fillStyle = 'rgba(255,255,255,0.92)';
 				ctx.textBaseline = 'middle';
+				ctx.textAlign = 'left';
 				for (const label of labels) {
 					const textWidth = ctx.measureText(label.text).width;
-					const boxWidth = Math.max(120, textWidth + 40);
-					const boxHeight = labelHeight;
-					const boxY = label.targetY - boxHeight / 2;
-
+					const desiredTextX = label.pointX + labelOffsetX;
+					const labelTextX = Math.min(desiredTextX, maxLabelRight - textWidth);
+					ctx.save();
 					ctx.strokeStyle = label.color;
-					ctx.lineWidth = 1.5;
+					ctx.globalAlpha = 0.65;
+					ctx.lineWidth = 1;
+					ctx.setLineDash([4, 4]);
 					ctx.beginPath();
 					ctx.moveTo(label.pointX, label.pointY);
-					ctx.lineTo(labelX - 10, label.targetY);
+					ctx.lineTo(labelTextX - 8, label.targetY);
 					ctx.stroke();
-
-					ctx.fillStyle = 'rgba(17, 20, 24, 0.82)';
-					ctx.strokeStyle = `${label.color}99`;
-					roundRect(labelX, boxY, boxWidth, boxHeight, 8);
-					ctx.fill();
-					ctx.stroke();
-
-					drawPoint(labelX - 18, label.targetY, label.color, 5.5);
-
+					ctx.restore();
 					ctx.fillStyle = label.color;
-					ctx.textAlign = 'left';
-					ctx.fillText(label.text, labelX + 10, label.targetY + 0.5);
+					ctx.fillText(label.text, labelTextX, label.targetY + 0.5);
 				}
 				ctx.restore();
 			}
 
 			function drawPoint(x, y, color, radius) {
 				ctx.save();
-				ctx.fillStyle = `${color}55`;
 				ctx.beginPath();
-				ctx.arc(x, y, radius * 2.2, 0, Math.PI * 2);
-				ctx.fill();
+				ctx.arc(x, y, radius + 0.5, 0, Math.PI * 2);
+				ctx.lineWidth = 1;
+				ctx.strokeStyle = color;
+				ctx.stroke();
 				ctx.fillStyle = '#ffffff';
 				ctx.beginPath();
 				ctx.arc(x, y, radius, 0, Math.PI * 2);
 				ctx.fill();
 				ctx.restore();
-			}
-
-			function roundRect(x, y, width, height, radius) {
-				ctx.beginPath();
-				ctx.moveTo(x + radius, y);
-				ctx.arcTo(x + width, y, x + width, y + height, radius);
-				ctx.arcTo(x + width, y + height, x, y + height, radius);
-				ctx.arcTo(x, y + height, x, y, radius);
-				ctx.arcTo(x, y, x + width, y, radius);
-				ctx.closePath();
 			}
 
 			function toX(ts, layout, prepared) {
@@ -489,6 +481,11 @@
 			}
 
 			window.addEventListener('resize', renderSoon);
+			if (document.fonts && document.fonts.load) {
+				document.fonts.load(LABEL_FONT).then(() => {
+					renderSoon();
+				});
+			}
 			connect();
 			render();
 		})();
