@@ -2,9 +2,29 @@ class_name SymbolIconLoader
 extends RefCounted
 
 const SYMBOL_ICON_BASE_URL := "https://legend-trade-dev.s3.amazonaws.com/token-images/%s.png"
+const PRELOADED_SYMBOLS := [
+	"ETH",
+	"$HYPE",
+	"AVAX",
+	"DOGE",
+	"ARB",
+	"BTC",
+	"MATIC",
+	"SOL",
+]
 
 static var _symbol_icon_cache: Dictionary = {}
 static var _pending_callbacks_by_symbol: Dictionary = {}
+static var _has_preloaded_symbols := false
+
+
+func ensure_preloaded(owner: Node) -> void:
+	if _has_preloaded_symbols:
+		return
+
+	_has_preloaded_symbols = true
+	for symbol: String in PRELOADED_SYMBOLS:
+		request_icon(owner, symbol, Callable())
 
 
 func get_cached_icon(symbol_value: Variant) -> Texture2D:

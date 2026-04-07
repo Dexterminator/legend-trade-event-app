@@ -33,6 +33,7 @@ static func create(trade_update: Dictionary, parent: Node2D) -> RecentTrade:
 	return instance
 
 func init(trade_update: Dictionary) -> void:
+	_symbol_icon_loader.ensure_preloaded(self )
 	_ensure_panel_style()
 	name_label.text = trade_update["username"]
 	var action: String = trade_update["action"]
@@ -70,7 +71,7 @@ func _set_symbol_icon(symbol: String) -> void:
 		return
 
 	icon_texture.texture = null
-	_symbol_icon_loader.request_icon(self, symbol, _on_symbol_icon_loaded.bind(symbol))
+	_symbol_icon_loader.request_icon(self , symbol, _on_symbol_icon_loaded.bind(symbol))
 
 
 func _on_symbol_icon_loaded(texture: Texture2D, loaded_symbol: String, expected_symbol: String) -> void:

@@ -40,6 +40,7 @@ func _update_rank_label() -> void:
 	rank_label.text = str(rank)
 
 func init(trader: Dictionary, new_rank: int) -> void:
+	_symbol_icon_loader.ensure_preloaded(self )
 	user_name_label.text = trader["username"]
 	rank = new_rank
 	_update_rank_label()
@@ -126,7 +127,7 @@ func _set_top_position_symbol(index: int, symbol: String) -> void:
 		return
 
 	_fade_top_position_slot(index, null, "")
-	_symbol_icon_loader.request_icon(self, symbol, _on_top_position_icon_loaded.bind(index, symbol))
+	_symbol_icon_loader.request_icon(self , symbol, _on_top_position_icon_loaded.bind(index, symbol))
 
 
 func _on_top_position_icon_loaded(texture: Texture2D, loaded_symbol: String, index: int, expected_symbol: String) -> void:
