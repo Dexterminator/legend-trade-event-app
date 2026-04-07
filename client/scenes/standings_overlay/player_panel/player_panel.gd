@@ -3,6 +3,8 @@ extends PanelContainer
 
 const PlayerPanelSparklineScript := preload("res://scenes/standings_overlay/player_panel/player_panel_sparkline.gd")
 const SYMBOL_ICON_BASE_URL := "https://legend-trade-dev.s3.amazonaws.com/token-images/%s.png"
+const TOP_POSITION_FADE_OUT_DURATION := 0.3
+const TOP_POSITION_FADE_IN_DURATION := 0.3
 
 @onready var user_name_label: Label = %UserNameLabel
 @onready var rank_container: HBoxContainer = %RankContainer
@@ -23,6 +25,8 @@ var is_eliminated: bool = false
 var _top_position_icon_slots: Array[TextureRect] = []
 var _symbol_icon_requests: Dictionary = {}
 var _current_top_position_symbols: Array[String] = []
+var _displayed_top_position_symbols: Array[String] = []
+var _top_position_fade_tweens: Dictionary = {}
 
 const RANK_DELTA_RESET_TIME: float = 3 * 60.0
 
@@ -72,7 +76,10 @@ func _cache_top_position_slots() -> void:
 
 	for child in top_positions_container.get_children():
 		if child is TextureRect:
-			_top_position_icon_slots.append(child as TextureRect)
+			var slot := child as TextureRect
+			slot.modulate.a = 1.0 if slot.texture != null else 0.0
+			_top_position_icon_slots.append(slot)
+			_displayed_top_position_symbols.append("")
 
 
 func _update_top_positions(top_positions: Array) -> void:
@@ -80,25 +87,48 @@ func _update_top_positions(top_positions: Array) -> void:
 	_current_top_position_symbols.clear()
 
 	for i in _top_position_icon_slots.size():
-		var slot := _top_position_icon_slots[i]
 		if i >= top_positions.size():
-			slot.texture = null
+			_current_top_position_symbols.append("")
+			_set_top_position_symbol(i, "")
 			continue
 
 		var top_position: Variant = top_positions[i]
 		if not top_position is Dictionary:
-			slot.texture = null
+			_current_top_position_symbols.append("")
+			_set_top_position_symbol(i, "")
 			continue
 
 		var top_position_dict: Dictionary = top_position
 		var symbol_value: Variant = top_position_dict.get("symbol", "")
 		var symbol := str(symbol_value).to_upper()
+		_current_top_position_symbols.append(symbol)
 		if symbol.is_empty():
-			slot.texture = null
+			_set_top_position_symbol(i, "")
 			continue
 
-		_current_top_position_symbols.append(symbol)
-		_apply_symbol_icon(slot, symbol)
+		_set_top_position_symbol(i, symbol)
+
+
+func _set_top_position_symbol(index: int, symbol: String) -> void:
+	var current_symbol := _displayed_top_position_symbols[index]
+	if current_symbol == symbol:
+		var current_cached_texture: Texture2D = symbol_icon_cache.get(symbol)
+		if current_cached_texture != null and _top_position_icon_slots[index].texture != current_cached_texture:
+			_top_position_icon_slots[index].texture = current_cached_texture
+			_top_position_icon_slots[index].modulate.a = 1.0
+		return
+
+	var next_cached_texture: Texture2D = symbol_icon_cache.get(symbol)
+	if symbol.is_empty():
+		_fade_top_position_slot(index, null, "")
+		return
+
+	if next_cached_texture != null:
+		_fade_top_position_slot(index, next_cached_texture, symbol)
+		return
+
+	_fade_top_position_slot(index, null, "")
+	_apply_symbol_icon(_top_position_icon_slots[index], symbol)
 
 
 func _apply_symbol_icon(slot: TextureRect, symbol: String) -> void:
@@ -140,13 +170,44 @@ func _on_symbol_icon_request_completed(result: int, response_code: int, _headers
 		if i >= _current_top_position_symbols.size():
 			continue
 		if _current_top_position_symbols[i] == symbol:
-			_top_position_icon_slots[i].texture = texture
+			_fade_top_position_slot(i, texture, symbol)
 
 
 func _as_array(value: Variant) -> Array:
 	if value is Array:
 		return value
 	return []
+
+
+func _fade_top_position_slot(index: int, next_texture: Texture2D, next_symbol: String) -> void:
+	var slot := _top_position_icon_slots[index]
+	var existing_tween: Tween = _top_position_fade_tweens.get(slot)
+	if existing_tween != null and is_instance_valid(existing_tween):
+		existing_tween.kill()
+
+	var tween := create_tween()
+	_top_position_fade_tweens[slot] = tween
+	var start_alpha := slot.modulate.a
+
+	if start_alpha > 0.0:
+		tween.tween_property(slot, "modulate:a", 0.0, TOP_POSITION_FADE_OUT_DURATION)
+
+	tween.tween_callback(func() -> void:
+		slot.texture = next_texture
+		_displayed_top_position_symbols[index] = next_symbol
+	)
+
+	if next_texture != null:
+		tween.tween_property(slot, "modulate:a", 1.0, TOP_POSITION_FADE_IN_DURATION)
+	else:
+		tween.tween_callback(func() -> void:
+			slot.modulate.a = 0.0
+		)
+
+	tween.finished.connect(func() -> void:
+		if _top_position_fade_tweens.get(slot) == tween:
+			_top_position_fade_tweens.erase(slot)
+	)
 
 func set_rank_label(new_rank: int) -> void:
 	var prev_rank: int = int(rank_label.text)
