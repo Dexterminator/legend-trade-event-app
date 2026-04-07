@@ -2,7 +2,8 @@ extends Node2D
 class_name RecentTrade
 
 const Factory := preload("res://scenes/recent_trades_overlay/recent_trade/recent_trade.tscn")
-const SYMBOL_ICON_BASE_URL := "https://legend-trade-dev.s3.amazonaws.com/token-images/%s.png"
+
+var _symbol_icon_loader := preload("res://scripts/symbol_icon_loader.gd").new()
 
 @onready var panel_container: PanelContainer = $PanelContainer
 @onready var name_label: Label = %Name
@@ -14,14 +15,11 @@ const SYMBOL_ICON_BASE_URL := "https://legend-trade-dev.s3.amazonaws.com/token-i
 @onready var size_label: Label = %Size
 @onready var closed_pnl_label: Label = %ClosedPnl
 
-static var symbol_icon_cache: Dictionary = {}
-
 var background_flash_tween: Tween
 var panel_style: StyleBoxFlat
 var panel_base_bg_color := Color(0.07058824, 0.07058824, 0.07058824, 1.0)
 var pending_closed_trade_flash_pnl: float = 0.0
 var has_pending_closed_trade_flash := false
-var _symbol_icon_request: HTTPRequest
 var _current_symbol: String = ""
 
 const BACKGROUND_FLASH_IN_DURATION := 0.12
@@ -66,45 +64,21 @@ func _set_symbol_icon(symbol: String) -> void:
 		icon_texture.texture = null
 		return
 
-	if symbol_icon_cache.has(symbol):
-		icon_texture.texture = symbol_icon_cache[symbol]
+	var cached_texture: Texture2D = _symbol_icon_loader.get_cached_icon(symbol)
+	if cached_texture != null:
+		icon_texture.texture = cached_texture
 		return
 
 	icon_texture.texture = null
-	if _symbol_icon_request != null and is_instance_valid(_symbol_icon_request):
-		_symbol_icon_request.queue_free()
-
-	_symbol_icon_request = HTTPRequest.new()
-	add_child(_symbol_icon_request)
-	_symbol_icon_request.request_completed.connect(_on_symbol_icon_request_completed.bind(symbol, _symbol_icon_request))
-	var url_symbol := "HYPE" if symbol == "$HYPE" else symbol
-	var error := _symbol_icon_request.request(SYMBOL_ICON_BASE_URL % url_symbol)
-	if error != OK:
-		_symbol_icon_request.queue_free()
-		_symbol_icon_request = null
+	_symbol_icon_loader.request_icon(self, symbol, _on_symbol_icon_loaded.bind(symbol))
 
 
-func _on_symbol_icon_request_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, symbol: String, request: HTTPRequest) -> void:
-	if request != _symbol_icon_request:
-		if is_instance_valid(request):
-			request.queue_free()
+func _on_symbol_icon_loaded(texture: Texture2D, loaded_symbol: String, expected_symbol: String) -> void:
+	if texture == null:
 		return
-
-	_symbol_icon_request = null
-	if is_instance_valid(request):
-		request.queue_free()
-
-	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+	if loaded_symbol != expected_symbol:
 		return
-
-	var image := Image.new()
-	var error := image.load_png_from_buffer(body)
-	if error != OK:
-		return
-
-	var texture := ImageTexture.create_from_image(image)
-	symbol_icon_cache[symbol] = texture
-	if _current_symbol == symbol:
+	if _current_symbol == expected_symbol:
 		icon_texture.texture = texture
 
 
