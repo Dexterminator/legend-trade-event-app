@@ -2,6 +2,7 @@ class_name SymbolIconLoader
 extends RefCounted
 
 const SYMBOL_ICON_BASE_URL := "https://legend-trade-dev.s3.amazonaws.com/token-images/%s.png"
+const SYMBOL_ICON_PROXY_PATH := "/token-images/%s.png"
 const PRELOADED_SYMBOLS := [
 	"ETH",
 	"$HYPE",
@@ -58,7 +59,7 @@ func request_icon(owner: Node, symbol_value: Variant, on_loaded: Callable) -> St
 		_complete_request(symbol, request, result, response_code, body)
 	)
 
-	var error := request.request(SYMBOL_ICON_BASE_URL % url_symbol)
+	var error := request.request(get_icon_url(url_symbol))
 	if error != OK:
 		_complete_request(symbol, request, -1, 0, PackedByteArray())
 
@@ -73,6 +74,13 @@ func get_url_symbol(symbol: String) -> String:
 	if symbol == "$HYPE":
 		return "HYPE"
 	return symbol
+
+
+func get_icon_url(url_symbol: String) -> String:
+	if OS.has_feature("web"):
+		var origin := str(JavaScriptBridge.eval("window.location.origin"))
+		return origin + (SYMBOL_ICON_PROXY_PATH % url_symbol)
+	return SYMBOL_ICON_BASE_URL % url_symbol
 
 
 func _complete_request(symbol: String, request: HTTPRequest, result: int, response_code: int, body: PackedByteArray) -> void:

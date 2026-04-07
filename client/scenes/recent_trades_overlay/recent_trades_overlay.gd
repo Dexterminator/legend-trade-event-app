@@ -53,7 +53,7 @@ func _fade_out_and_remove_trade(recent_trade: RecentTrade) -> void:
 		recent_trade,
 		"position:y",
 		recent_trade.position.y + trade_height * 0.5,
-		FADE_DURATION * 0.5
+		FADE_DURATION
 	).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tween.parallel().tween_property(
 		recent_trade,

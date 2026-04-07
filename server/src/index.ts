@@ -9,6 +9,7 @@ import { connectExternal, destroyExternal, reconnectExternal } from './wsExterna
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const PORT = Number(process.env['PORT'] ?? 5050)
+const TOKEN_IMAGE_BASE_URL = 'https://legend-trade-dev.s3.amazonaws.com/token-images'
 
 // Served after `npm run build && export.sh` copies the Godot web export here
 const PUBLIC_DIR = path.resolve(__dirname, '..', 'public')
@@ -23,6 +24,33 @@ app.get('/', (_req, res) => {
 
 app.get('/pnl-chart', (_req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, 'pnl-chart.html'))
+})
+
+app.get('/token-images/:symbol.png', async (req, res) => {
+    const symbol = String(req.params['symbol'] ?? '').trim().toUpperCase()
+    if (symbol.length === 0) {
+        res.status(400).json({ error: 'invalid symbol' })
+        return
+    }
+
+    try {
+        const upstream = await fetch(`${TOKEN_IMAGE_BASE_URL}/${encodeURIComponent(symbol)}.png`)
+        if (!upstream.ok) {
+            res.sendStatus(upstream.status)
+            return
+        }
+
+        const contentType = upstream.headers.get('content-type') ?? 'image/png'
+        const cacheControl = upstream.headers.get('cache-control') ?? 'public, max-age=3600'
+        const body = Buffer.from(await upstream.arrayBuffer())
+
+        res.setHeader('Content-Type', contentType)
+        res.setHeader('Cache-Control', cacheControl)
+        res.send(body)
+    } catch (error) {
+        console.error('Token image proxy request failed', { symbol, error })
+        res.status(502).json({ error: 'token image proxy failed' })
+    }
 })
 
 app.get('/debug/state', (_req, res) => {
