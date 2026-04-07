@@ -2,6 +2,7 @@ extends Node2D
 class_name RecentTrade
 
 const Factory := preload("res://scenes/recent_trades_overlay/recent_trade/recent_trade.tscn")
+const SYMBOL_ICON_BASE_URL := "https://legend-trade-dev.s3.amazonaws.com/token-images/%s.png"
 
 @onready var panel_container: PanelContainer = $PanelContainer
 @onready var name_label: Label = %Name
@@ -13,11 +14,15 @@ const Factory := preload("res://scenes/recent_trades_overlay/recent_trade/recent
 @onready var size_label: Label = %Size
 @onready var closed_pnl_label: Label = %ClosedPnl
 
+static var symbol_icon_cache: Dictionary = {}
+
 var background_flash_tween: Tween
 var panel_style: StyleBoxFlat
 var panel_base_bg_color := Color(0.07058824, 0.07058824, 0.07058824, 1.0)
 var pending_closed_trade_flash_pnl: float = 0.0
 var has_pending_closed_trade_flash := false
+var _symbol_icon_request: HTTPRequest
+var _current_symbol: String = ""
 
 const BACKGROUND_FLASH_IN_DURATION := 0.12
 const BACKGROUND_FLASH_OUT_DURATION := 0.3
@@ -39,7 +44,9 @@ func init(trade_update: Dictionary) -> void:
 	var side: String = trade_update["side"]
 	action_label.text = action.capitalize() + ": " + side
 	timestamp_label.text = Utils.format_timestamp(ts)
-	symbol_label.text = trade_update["symbol"]
+	var symbol := str(trade_update["symbol"]).to_upper()
+	symbol_label.text = symbol
+	_set_symbol_icon(symbol)
 	size_label.text = Utils.format_compact_number(size_usd)
 	price_label.text = Utils.format_compact_number(price)
 	if action == "closed":
@@ -51,6 +58,54 @@ func init(trade_update: Dictionary) -> void:
 	else:
 		closed_pnl_label.text = ""
 		has_pending_closed_trade_flash = false
+
+
+func _set_symbol_icon(symbol: String) -> void:
+	_current_symbol = symbol
+	if symbol.is_empty():
+		icon_texture.texture = null
+		return
+
+	if symbol_icon_cache.has(symbol):
+		icon_texture.texture = symbol_icon_cache[symbol]
+		return
+
+	icon_texture.texture = null
+	if _symbol_icon_request != null and is_instance_valid(_symbol_icon_request):
+		_symbol_icon_request.queue_free()
+
+	_symbol_icon_request = HTTPRequest.new()
+	add_child(_symbol_icon_request)
+	_symbol_icon_request.request_completed.connect(_on_symbol_icon_request_completed.bind(symbol, _symbol_icon_request))
+	var url_symbol := "HYPE" if symbol == "$HYPE" else symbol
+	var error := _symbol_icon_request.request(SYMBOL_ICON_BASE_URL % url_symbol)
+	if error != OK:
+		_symbol_icon_request.queue_free()
+		_symbol_icon_request = null
+
+
+func _on_symbol_icon_request_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, symbol: String, request: HTTPRequest) -> void:
+	if request != _symbol_icon_request:
+		if is_instance_valid(request):
+			request.queue_free()
+		return
+
+	_symbol_icon_request = null
+	if is_instance_valid(request):
+		request.queue_free()
+
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		return
+
+	var image := Image.new()
+	var error := image.load_png_from_buffer(body)
+	if error != OK:
+		return
+
+	var texture := ImageTexture.create_from_image(image)
+	symbol_icon_cache[symbol] = texture
+	if _current_symbol == symbol:
+		icon_texture.texture = texture
 
 
 func _ensure_panel_style() -> void:
