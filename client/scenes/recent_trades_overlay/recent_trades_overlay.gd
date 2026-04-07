@@ -14,10 +14,25 @@ const POPUP_MAX_TRADES: int = 3
 const POPUP_TRADE_VISIBLE_DURATION: float = 3.0
 
 func _ready() -> void:
+	_apply_url_query_params()
 	modulate.a = 0.0
 	var t := create_tween()
 	t.tween_property(self , "modulate:a", 1.0, 2.0).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	SignalBus.trade_update.connect(_on_trade_update)
+
+
+func _apply_url_query_params() -> void:
+	if not OS.has_feature("web"):
+		return
+
+	var query: String = JavaScriptBridge.eval("window.location.search")
+	for part: String in query.trim_prefix("?").split("&"):
+		var kv := part.split("=")
+		if kv.size() != 2 or kv[0] != "popup_trades":
+			continue
+
+		is_popup_trades = kv[1].to_lower().strip_edges() == "true"
+		return
 
 
 func _kill_trade_tween(recent_trade: RecentTrade) -> void:
