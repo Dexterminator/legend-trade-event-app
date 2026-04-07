@@ -1,5 +1,7 @@
 extends Control
 
+@export var is_popup_trades := false
+
 @onready var spawn_point: Marker2D = %Spawn
 var recent_trades: Array[RecentTrade] = []
 var trade_tweens: Dictionary = {}
@@ -8,6 +10,8 @@ const TRADE_GAP: float = 16.0
 const MOVE_DURATION: float = 0.45
 const FADE_DURATION: float = 0.5
 const MAX_TRADES: int = 7
+const POPUP_MAX_TRADES: int = 3
+const POPUP_TRADE_VISIBLE_DURATION: float = 3.0
 
 func _ready() -> void:
 	modulate.a = 0.0
@@ -26,6 +30,7 @@ func _fade_out_and_remove_trade(recent_trade: RecentTrade) -> void:
 	_kill_trade_tween(recent_trade)
 	var tween := create_tween()
 	trade_tweens[recent_trade] = tween
+	var recent_trade_ref: WeakRef = weakref(recent_trade)
 	var panel := recent_trade.get_node("PanelContainer") as PanelContainer
 	var trade_height: float = panel.size.y if panel.size.y > 0.0 else panel.get_combined_minimum_size().y
 
@@ -42,15 +47,40 @@ func _fade_out_and_remove_trade(recent_trade: RecentTrade) -> void:
 		FADE_DURATION * 0.8
 	).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tween.finished.connect(func() -> void:
-		if trade_tweens.get(recent_trade) == tween:
-			trade_tweens.erase(recent_trade)
-		if is_instance_valid(recent_trade):
-			recent_trade.queue_free()
+		var trade_object: Object = recent_trade_ref.get_ref()
+		if not trade_object is RecentTrade:
+			return
+		var trade: RecentTrade = trade_object
+		if trade != null and trade_tweens.get(trade) == tween:
+			trade_tweens.erase(trade)
+		if trade != null:
+			trade.queue_free()
+	)
+
+
+func _get_max_trades() -> int:
+	return POPUP_MAX_TRADES if is_popup_trades else MAX_TRADES
+
+
+func _schedule_trade_fade_out(recent_trade: RecentTrade) -> void:
+	var timer := get_tree().create_timer(POPUP_TRADE_VISIBLE_DURATION)
+	var recent_trade_ref: WeakRef = weakref(recent_trade)
+	timer.timeout.connect(func() -> void:
+		var trade_object: Object = recent_trade_ref.get_ref()
+		if not trade_object is RecentTrade:
+			return
+		var trade: RecentTrade = trade_object
+		var trade_index := recent_trades.find(trade)
+		if trade_index == -1:
+			return
+		recent_trades.remove_at(trade_index)
+		_fade_out_and_remove_trade(trade)
+		_animate_recent_trades()
 	)
 
 
 func _trim_recent_trades() -> void:
-	while recent_trades.size() > MAX_TRADES:
+	while recent_trades.size() > _get_max_trades():
 		var oldest_trade: RecentTrade = recent_trades.pop_back()
 		_fade_out_and_remove_trade(oldest_trade)
 
@@ -67,6 +97,7 @@ func _get_trade_target_position(index: int) -> Vector2:
 func _animate_recent_trades() -> void:
 	for i in recent_trades.size():
 		var recent_trade: RecentTrade = recent_trades[i]
+		var recent_trade_ref: WeakRef = weakref(recent_trade)
 		var should_play_closed_trade_flash := i == 0
 		var tween := create_tween()
 		_kill_trade_tween(recent_trade)
@@ -85,10 +116,14 @@ func _animate_recent_trades() -> void:
 			FADE_DURATION
 		).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 		tween.finished.connect(func() -> void:
-			if trade_tweens.get(recent_trade) == tween:
-				trade_tweens.erase(recent_trade)
-			if should_play_closed_trade_flash and is_instance_valid(recent_trade):
-				recent_trade.play_queued_closed_trade_flash()
+			var trade_object: Object = recent_trade_ref.get_ref()
+			if not trade_object is RecentTrade:
+				return
+			var trade: RecentTrade = trade_object
+			if trade != null and trade_tweens.get(trade) == tween:
+				trade_tweens.erase(trade)
+			if should_play_closed_trade_flash and trade != null:
+				trade.play_queued_closed_trade_flash()
 		)
 
 
@@ -97,6 +132,8 @@ func _on_trade_update(payload: Dictionary) -> void:
 	recent_trade.position = Vector2(WIDTH, 0.0)
 	recent_trade.modulate.a = 0.0
 	recent_trades.push_front(recent_trade)
+	if is_popup_trades:
+		_schedule_trade_fade_out(recent_trade)
 
 	_trim_recent_trades()
 	_animate_recent_trades()
