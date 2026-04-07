@@ -5,7 +5,6 @@ const CHART_LINE_WIDTH := 4.0
 const CHART_PADDING_X := 10.0
 const CHART_PADDING_TOP := 24.0
 const CHART_PADDING_BOTTOM := 10.0
-const CHART_AVERAGE_VALUE_RANGE_RADIUS := 1.0
 const CHART_COLOR := Color(0.84705883, 0.34901962, 0.0627451, 0.3)
 
 var values := PackedFloat32Array()
@@ -49,25 +48,18 @@ func _draw() -> void:
 	var usable_width := chart_size.x - CHART_PADDING_X * 2.0
 	var usable_height := chart_size.y - CHART_PADDING_TOP - CHART_PADDING_BOTTOM
 
-	var value_sum := 0.0
-	for value in values:
-		value_sum += value
-	var average_value := value_sum / float(values.size())
-	var latest_value := values[values.size() - 1]
-	var min_value := average_value - CHART_AVERAGE_VALUE_RANGE_RADIUS
-	var max_value := average_value + CHART_AVERAGE_VALUE_RANGE_RADIUS
+	var min_value := values[0]
+	var max_value := values[0]
+	for value: float in values:
+		min_value = minf(min_value, value)
+		max_value = maxf(max_value, value)
 
-	if latest_value < min_value:
-		var underflow := min_value - latest_value
-		min_value -= underflow
-		max_value -= underflow
-	elif latest_value > max_value:
-		var overflow := latest_value - max_value
-		min_value += overflow
-		max_value += overflow
+	if is_equal_approx(min_value, max_value):
+		min_value -= 1.0
+		max_value += 1.0
 
 	if values.size() == 1:
-		var point_y := top + _value_to_y(latest_value, min_value, max_value, usable_height)
+		var point_y := top + _value_to_y(values[0], min_value, max_value, usable_height)
 		draw_circle(Vector2(left + usable_width * 0.5, point_y), CHART_LINE_WIDTH, CHART_COLOR)
 		return
 
