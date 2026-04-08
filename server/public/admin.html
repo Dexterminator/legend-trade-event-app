@@ -54,7 +54,6 @@
 			display: flex;
 			flex-wrap: wrap;
 			gap: 12px;
-			margin-left: auto;
 		}
 
 		.toolbar-actions {
@@ -292,6 +291,7 @@
 			<div class="pill">Updated <strong id="updated-at">never</strong></div>
 			<div class="toolbar-actions">
 				<button id="reconnect-external" class="pill" type="button">Reconnect</button>
+				<button id="eliminate-bottom-half" class="pill" type="button">Eliminate bottom half</button>
 			</div>
 			<div class="toolbar-links">
 				<a class="pill" href="http://localhost:5050/index.html?overlay=standings" target="_blank"
@@ -315,10 +315,12 @@
 		const statusTextEl = document.getElementById('status-text')
 		const updatedAtEl = document.getElementById('updated-at')
 		const reconnectExternalButtonEl = document.getElementById('reconnect-external')
+		const eliminateBottomHalfButtonEl = document.getElementById('eliminate-bottom-half')
 		const cardElements = new Map()
 		const pendingEliminationUpdates = new Set()
 		let emptyStateEl = null
 		let reconnectExternalPending = false
+		let eliminateBottomHalfPending = false
 
 		async function refresh() {
 			try {
@@ -362,6 +364,37 @@
 				reconnectExternalPending = false
 				reconnectExternalButtonEl.disabled = false
 				reconnectExternalButtonEl.textContent = 'Reconnect'
+			}
+		}
+
+		async function eliminateBottomHalfAction() {
+			if (eliminateBottomHalfPending) {
+				return
+			}
+
+			eliminateBottomHalfPending = true
+			eliminateBottomHalfButtonEl.disabled = true
+			eliminateBottomHalfButtonEl.textContent = 'Eliminating...'
+
+			try {
+				const response = await fetch('/admin/leaderboard/eliminate-bottom-half', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`)
+				}
+
+				await refresh()
+			} catch (error) {
+				renderError(error instanceof Error ? error.message : String(error))
+			} finally {
+				eliminateBottomHalfPending = false
+				eliminateBottomHalfButtonEl.disabled = false
+				eliminateBottomHalfButtonEl.textContent = 'Eliminate bottom half'
 			}
 		}
 
@@ -619,6 +652,10 @@
 
 		reconnectExternalButtonEl.addEventListener('click', () => {
 			void reconnectExternalFeed()
+		})
+
+		eliminateBottomHalfButtonEl.addEventListener('click', () => {
+			void eliminateBottomHalfAction()
 		})
 
 		refresh()

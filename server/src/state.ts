@@ -162,6 +162,37 @@ export function setTraderEliminated(userId: string, isEliminated: boolean): void
     }
 }
 
+export function eliminateBottomHalf(): void {
+    const leaderboard = state.competition.leaderboard
+    if (leaderboard === null) {
+        return
+    }
+
+    const activeTraders = leaderboard.traders
+        .filter((trader) => trader.is_eliminated !== true)
+        .sort((left, right) => {
+            if (left.rank !== right.rank) {
+                return left.rank - right.rank
+            }
+
+            return left.user_id.localeCompare(right.user_id)
+        })
+
+    if (activeTraders.length <= 1) {
+        return
+    }
+
+    const survivors = Math.ceil(activeTraders.length / 2)
+    const eliminatedUserIds = new Set(activeTraders.slice(survivors).map((trader) => trader.user_id))
+
+    state.competition.leaderboard = {
+        ...leaderboard,
+        traders: leaderboard.traders.map((trader) => eliminatedUserIds.has(trader.user_id)
+            ? { ...trader, is_eliminated: true }
+            : trader),
+    }
+}
+
 export function applyCompetitionEnvelope(envelope: CompetitionEnvelope): void {
     const receivedAt = new Date().toISOString()
 

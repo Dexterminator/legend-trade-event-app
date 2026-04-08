@@ -2,7 +2,7 @@ import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { setTraderEliminated, state } from './state.js'
+import { eliminateBottomHalf, setTraderEliminated, state } from './state.js'
 import { createWsServer, closeWsServer, startStateBroadcast } from './wsServer.js'
 import { connectExternal, destroyExternal, reconnectExternal } from './wsExternal.js'
 
@@ -77,6 +77,11 @@ app.post('/admin/traders/:userId/elimination', (req, res) => {
 
 app.post('/admin/external/reconnect', (_req, res) => {
     reconnectExternal()
+    res.status(204).end()
+})
+
+app.post('/admin/leaderboard/eliminate-bottom-half', (_req, res) => {
+    eliminateBottomHalf()
     res.status(204).end()
 })
 
