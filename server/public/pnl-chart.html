@@ -55,7 +55,9 @@
 	<script>
 		(() => {
 			const WINDOW_MS = 30 * 60 * 1000;
+			const X_AXIS_LOOKAHEAD_MS = 5 * 60 * 1000;
 			const RENDER_DELAY_MS = 2 * 1000;
+			const Y_RANGE_HALF_LIFE_MS = 220;
 			const FALLBACK_COLORS = ['#ff8a1f', '#4ade80', '#e879f9', '#22d3ee', '#60a5fa', '#f97316', '#fde047', '#7c3aed'];
 			const canvas = document.getElementById('chart');
 			const ctx = canvas.getContext('2d');
@@ -66,6 +68,8 @@
 			let reconnectTimer = null;
 			let latestPayload = null;
 			let playheadTs = null;
+			let displayedYMin = null;
+			let displayedYMax = null;
 			let lastFrameAt = null;
 			let lastCanvasWidth = 0;
 			let lastCanvasHeight = 0;
@@ -172,6 +176,8 @@
 			function prepareChartData(payload, frameDeltaMs) {
 				if (!payload || !payload.leaderboard || !payload.pnl) {
 					playheadTs = null;
+					displayedYMin = null;
+					displayedYMax = null;
 					return null;
 				}
 
@@ -196,11 +202,11 @@
 				}
 
 				const windowStart = Math.min(...seriesList.map((item) => item.series[0].ts));
-				const windowEnd = windowStart + WINDOW_MS;
+				const maxWindowEnd = windowStart + WINDOW_MS;
 				const filteredSeries = seriesList
 					.map((item) => ({
 						...item,
-						points: item.series.filter((point) => point.ts >= windowStart && point.ts <= windowEnd),
+						points: item.series.filter((point) => point.ts >= windowStart && point.ts <= maxWindowEnd),
 					}))
 					.filter((item) => item.points.length > 0);
 
@@ -210,9 +216,10 @@
 				}
 
 				const latestKnownTs = Math.max(...filteredSeries.map((item) => item.points[item.points.length - 1].ts));
-				const targetPlayheadTs = Math.max(windowStart, Math.min(windowEnd, latestKnownTs - RENDER_DELAY_MS));
+				const displayedWindowEnd = Math.min(maxWindowEnd, latestKnownTs + X_AXIS_LOOKAHEAD_MS);
+				const targetPlayheadTs = Math.max(windowStart, Math.min(maxWindowEnd, latestKnownTs - RENDER_DELAY_MS));
 
-				if (playheadTs === null || playheadTs < windowStart || playheadTs > windowEnd || playheadTs > latestKnownTs) {
+				if (playheadTs === null || playheadTs < windowStart || playheadTs > maxWindowEnd || playheadTs > latestKnownTs) {
 					playheadTs = targetPlayheadTs;
 				} else {
 					playheadTs = Math.min(playheadTs + frameDeltaMs, targetPlayheadTs);
@@ -230,24 +237,33 @@
 				}
 
 				const pnlValues = filteredSeries.flatMap((item) => item.points.map((point) => point.pnl_pct));
-				let yMin = Math.min(0, ...pnlValues);
-				let yMax = Math.max(0, ...pnlValues);
-				if (yMin === yMax) {
-					yMin -= 1;
-					yMax += 1;
+				let targetYMin = Math.min(0, ...pnlValues);
+				let targetYMax = Math.max(0, ...pnlValues);
+				if (targetYMin === targetYMax) {
+					targetYMin -= 1;
+					targetYMax += 1;
 				} else {
-					const padding = Math.max((yMax - yMin) * 0.12, 0.8);
-					yMin -= padding;
-					yMax += padding;
+					const padding = Math.max((targetYMax - targetYMin) * 0.12, 0.8);
+					targetYMin -= padding;
+					targetYMax += padding;
+				}
+
+				if (displayedYMin === null || displayedYMax === null || frameDeltaMs <= 0) {
+					displayedYMin = targetYMin;
+					displayedYMax = targetYMax;
+				} else {
+					const smoothing = 1 - Math.pow(0.5, frameDeltaMs / Y_RANGE_HALF_LIFE_MS);
+					displayedYMin += (targetYMin - displayedYMin) * smoothing;
+					displayedYMax += (targetYMax - displayedYMax) * smoothing;
 				}
 
 				return {
 					series: animatedSeries,
 					windowStart,
-					windowEnd,
+					windowEnd: displayedWindowEnd,
 					playheadTs,
-					yMin,
-					yMax,
+					yMin: displayedYMin,
+					yMax: displayedYMax,
 				};
 			}
 
@@ -402,7 +418,7 @@
 					ctx.lineCap = 'round';
 					ctx.lineJoin = 'round';
 					ctx.strokeStyle = item.color;
-					ctx.lineWidth = 1.0;
+					ctx.lineWidth = 1.5;
 					ctx.beginPath();
 					ctx.moveTo(points[0].x, points[0].y);
 					for (let i = 1; i < points.length; i += 1) {
