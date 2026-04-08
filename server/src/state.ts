@@ -193,6 +193,21 @@ export function eliminateBottomHalf(): void {
     }
 }
 
+export function resetEliminations(): void {
+    const leaderboard = state.competition.leaderboard
+    if (leaderboard === null) {
+        return
+    }
+
+    state.competition.leaderboard = {
+        ...leaderboard,
+        traders: leaderboard.traders.map((trader) => ({
+            ...trader,
+            is_eliminated: false,
+        })),
+    }
+}
+
 export function applyCompetitionEnvelope(envelope: CompetitionEnvelope): void {
     const receivedAt = new Date().toISOString()
 

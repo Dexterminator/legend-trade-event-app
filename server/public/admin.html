@@ -290,8 +290,9 @@
 			</div>
 			<div class="pill">Updated <strong id="updated-at">never</strong></div>
 			<div class="toolbar-actions">
-				<button id="reconnect-external" class="pill" type="button">Reconnect</button>
+				<button id="reconnect-external" class="pill" type="button">Clear graph</button>
 				<button id="eliminate-bottom-half" class="pill" type="button">Eliminate bottom half</button>
+				<button id="reset-eliminations" class="pill" type="button">Reset eliminations</button>
 			</div>
 			<div class="toolbar-links">
 				<a class="pill" href="http://localhost:5050/index.html?overlay=standings" target="_blank"
@@ -316,11 +317,13 @@
 		const updatedAtEl = document.getElementById('updated-at')
 		const reconnectExternalButtonEl = document.getElementById('reconnect-external')
 		const eliminateBottomHalfButtonEl = document.getElementById('eliminate-bottom-half')
+		const resetEliminationsButtonEl = document.getElementById('reset-eliminations')
 		const cardElements = new Map()
 		const pendingEliminationUpdates = new Set()
 		let emptyStateEl = null
 		let reconnectExternalPending = false
 		let eliminateBottomHalfPending = false
+		let resetEliminationsPending = false
 
 		async function refresh() {
 			try {
@@ -363,7 +366,7 @@
 			} finally {
 				reconnectExternalPending = false
 				reconnectExternalButtonEl.disabled = false
-				reconnectExternalButtonEl.textContent = 'Reconnect'
+				reconnectExternalButtonEl.textContent = 'Clear graph'
 			}
 		}
 
@@ -395,6 +398,37 @@
 				eliminateBottomHalfPending = false
 				eliminateBottomHalfButtonEl.disabled = false
 				eliminateBottomHalfButtonEl.textContent = 'Eliminate bottom half'
+			}
+		}
+
+		async function resetEliminationsAction() {
+			if (resetEliminationsPending) {
+				return
+			}
+
+			resetEliminationsPending = true
+			resetEliminationsButtonEl.disabled = true
+			resetEliminationsButtonEl.textContent = 'Resetting...'
+
+			try {
+				const response = await fetch('/admin/leaderboard/reset-eliminations', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`)
+				}
+
+				await refresh()
+			} catch (error) {
+				renderError(error instanceof Error ? error.message : String(error))
+			} finally {
+				resetEliminationsPending = false
+				resetEliminationsButtonEl.disabled = false
+				resetEliminationsButtonEl.textContent = 'Reset eliminations'
 			}
 		}
 
@@ -656,6 +690,10 @@
 
 		eliminateBottomHalfButtonEl.addEventListener('click', () => {
 			void eliminateBottomHalfAction()
+		})
+
+		resetEliminationsButtonEl.addEventListener('click', () => {
+			void resetEliminationsAction()
 		})
 
 		refresh()
