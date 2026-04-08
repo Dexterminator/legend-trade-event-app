@@ -69,7 +69,7 @@ func _spawn_overlay() -> void:
 				key = kv[1].to_lower().strip_edges()
 				break
 	else:
-		key = "standings"
+		key = "recent_trades" # default for native/editor
 	if key in OVERLAYS:
 		var overlay: Control = (OVERLAYS[key] as PackedScene).instantiate()
 		overlay.focus_mode = Control.FOCUS_NONE

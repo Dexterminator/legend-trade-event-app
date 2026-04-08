@@ -148,4 +148,9 @@ static func format_timestamp(timestamp: int) -> String:
 	var offset_minutes: int = time_zone["bias"]
 	var local_unix_time := unix_time + (offset_minutes * 60)
 	var local_time := Time.get_time_dict_from_unix_time(local_unix_time)
-	return "%d:%02d" % [local_time.hour, local_time.minute]
+	var hour_24: int = local_time.hour
+	# var period := "AM" if hour_24 < 12 else "PM"
+	var hour_12 := hour_24 % 12
+	if hour_12 == 0:
+		hour_12 = 12
+	return "%d:%02d" % [hour_12, local_time.minute]
