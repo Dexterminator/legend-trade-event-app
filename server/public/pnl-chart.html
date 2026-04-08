@@ -341,6 +341,7 @@
 				const yTicks = getYTicks(prepared.yMin, prepared.yMax, 6);
 				for (const tick of yTicks) {
 					const y = toY(tick, layout, prepared);
+					const labelY = getClampedYTickLabelY(y);
 					if (Math.abs(tick) < 0.0001) {
 						ctx.setLineDash([4, 8]);
 						ctx.beginPath();
@@ -349,7 +350,7 @@
 						ctx.stroke();
 						ctx.setLineDash([]);
 					}
-					ctx.fillText(`${tick.toFixed(1)}%`, layout.plotLeft - 14, y);
+					ctx.fillText(`${tick.toFixed(1)}%`, layout.plotLeft - 14, labelY);
 				}
 
 				ctx.textAlign = 'center';
@@ -363,6 +364,15 @@
 				}
 
 				ctx.restore();
+			}
+
+			function getClampedYTickLabelY(y) {
+				const metrics = ctx.measureText('100.0%');
+				const ascent = metrics.actualBoundingBoxAscent || 6;
+				const descent = metrics.actualBoundingBoxDescent || 6;
+				const minY = ascent * 2;
+				const maxY = canvas.clientHeight - descent * 2;
+				return Math.min(maxY, Math.max(minY, y));
 			}
 
 			function drawSeries(layout, prepared) {
