@@ -4,6 +4,7 @@ extends PanelContainer
 const PlayerPanelSparklineScript := preload("res://scenes/standings_overlay/player_panel/player_panel_sparkline.gd")
 const TOP_POSITION_FADE_OUT_DURATION := 0.3
 const TOP_POSITION_FADE_IN_DURATION := 0.3
+const ELIMINATION_FADE_DURATION := 0.45
 
 var _symbol_icon_loader := preload("res://scripts/symbol_icon_loader.gd").new()
 
@@ -25,6 +26,7 @@ var _top_position_icon_slots: Array[TextureRect] = []
 var _current_top_position_symbols: Array[String] = []
 var _displayed_top_position_symbols: Array[String] = []
 var _top_position_fade_tweens: Dictionary = {}
+var _elimination_tween: Tween
 
 const RANK_DELTA_RESET_TIME: float = 3 * 60.0
 
@@ -44,6 +46,7 @@ func init(trader: Dictionary, new_rank: int) -> void:
 	user_name_label.text = trader["username"]
 	rank = new_rank
 	_update_rank_label()
+	_apply_elimination_state(_bool_value(trader.get("is_eliminated", false)), false)
 	pnl_sparkline.clear_values()
 	_cache_top_position_slots()
 	_update_top_positions(_as_array(trader.get("top_positions", [])))
@@ -53,6 +56,7 @@ func init(trader: Dictionary, new_rank: int) -> void:
 	flag_texture.texture = load("res://assets/flag_%s.png" % country_code.to_lower())
 
 func _update(updates: Dictionary) -> void:
+	_apply_elimination_state(_bool_value(updates.get("is_eliminated", false)))
 	rank = updates["rank"]
 	var pnl_pct: float = updates["pnl_pct"]
 	var volume: float = updates["volume_usd"]
@@ -60,13 +64,39 @@ func _update(updates: Dictionary) -> void:
 	Utils.format_pct_label(pnl_pct_label, pnl_pct)
 	pnl_sparkline.set_values(sparkline)
 	volume_label.text = Utils.format_compact_number(volume)
-	is_eliminated = updates["is_eliminated"]
-	visible = not is_eliminated
 	_update_top_positions(_as_array(updates.get("top_positions", [])))
 
 	if Delta.exceeded(ts_rank_delta_sign_changed, RANK_DELTA_RESET_TIME):
 		rank_delta_sign = 0
 		rank_delta_indicator.texture = rank_delta_textures["neutral"]
+
+
+func _apply_elimination_state(next_is_eliminated: bool, animate: bool = true) -> void:
+	is_eliminated = next_is_eliminated
+
+	if _elimination_tween != null and is_instance_valid(_elimination_tween):
+		_elimination_tween.kill()
+
+	var target_alpha := 0.0 if is_eliminated else 1.0
+	if not animate:
+		modulate.a = target_alpha
+		return
+
+	_elimination_tween = create_tween()
+	_elimination_tween.tween_property(self , "modulate:a", target_alpha, ELIMINATION_FADE_DURATION).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+
+
+func _bool_value(value: Variant) -> bool:
+	if value is bool:
+		var bool_value: bool = value
+		return bool_value
+	if value is int:
+		var int_value: int = value
+		return int_value != 0
+	if value is float:
+		var float_value: float = value
+		return not is_zero_approx(float_value)
+	return false
 
 
 func _cache_top_position_slots() -> void:
