@@ -68,6 +68,7 @@
 			let reconnectDelay = 1000;
 			let reconnectTimer = null;
 			let latestPayload = null;
+			let lastPreparedChartData = null;
 			let playheadTs = null;
 			let displayedYMin = null;
 			let displayedYMax = null;
@@ -159,11 +160,13 @@
 				resizeCanvasIfNeeded();
 				ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
-				const prepared = prepareChartData(latestPayload, frameDeltaMs);
+				const prepared = prepareChartData(latestPayload, frameDeltaMs) ?? lastPreparedChartData;
 				if (prepared === null) {
 					drawEmptyState();
 					return;
 				}
+
+				lastPreparedChartData = prepared;
 
 				const layout = getLayout(canvas.clientWidth, canvas.clientHeight, prepared);
 				drawGrid(layout, prepared);
@@ -177,10 +180,6 @@
 
 			function prepareChartData(payload, frameDeltaMs) {
 				if (!payload || !payload.leaderboard || !payload.pnl) {
-					playheadTs = null;
-					displayedYMin = null;
-					displayedYMax = null;
-					displayedLabelYByUserId.clear();
 					return null;
 				}
 
@@ -201,7 +200,6 @@
 				}
 
 				if (seriesList.length === 0) {
-					displayedLabelYByUserId.clear();
 					return null;
 				}
 
@@ -215,8 +213,6 @@
 					.filter((item) => item.points.length > 0);
 
 				if (filteredSeries.length === 0) {
-					playheadTs = null;
-					displayedLabelYByUserId.clear();
 					return null;
 				}
 
@@ -238,7 +234,6 @@
 					.filter((item) => item.points.length > 0);
 
 				if (animatedSeries.length === 0) {
-					displayedLabelYByUserId.clear();
 					return null;
 				}
 
