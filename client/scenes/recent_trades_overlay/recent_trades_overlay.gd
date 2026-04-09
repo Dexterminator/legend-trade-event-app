@@ -3,7 +3,6 @@ extends Control
 @export var is_popup_trades := false
 
 @onready var spawn_point: Marker2D = %Spawn
-@onready var header: Label = %Header
 var recent_trades: Array[RecentTrade] = []
 var trade_tweens: Dictionary = {}
 const WIDTH: float = 600.0

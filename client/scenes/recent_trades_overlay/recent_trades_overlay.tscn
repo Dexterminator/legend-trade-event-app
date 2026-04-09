@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://db3lfhpoooca"]
 
 [ext_resource type="Script" uid="uid://m5xrl424l46m" path="res://scenes/recent_trades_overlay/recent_trades_overlay.gd" id="1_rxi47"]
-[ext_resource type="FontFile" uid="uid://cnk6su13xxbv4" path="res://assets/akira_expanded/Akira Expanded Demo.otf" id="2_psrgk"]
 
 [node name="RecentTradesOverlay" type="Control" unique_id=1339884514]
 layout_mode = 3
@@ -10,18 +9,4 @@ script = ExtResource("1_rxi47")
 
 [node name="Spawn" type="Marker2D" parent="." unique_id=1707828302]
 unique_name_in_owner = true
-position = Vector2(1320, 56)
-
-[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1863228682]
-layout_mode = 0
-offset_left = 1310.0
-offset_right = 1872.0
-offset_bottom = 39.0
-theme_override_constants/margin_left = 20
-
-[node name="Header" type="Label" parent="MarginContainer" unique_id=2108030392]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_fonts/font = ExtResource("2_psrgk")
-theme_override_font_sizes/font_size = 36
-text = "Recent Trades"
+position = Vector2(1320, 0)
