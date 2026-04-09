@@ -4,10 +4,12 @@ import {
     getSelectedCompetitionId,
     patchConnectionState,
     type CompetitionEnvelope,
+    type PnlDataset,
 } from './state.js'
 
 const DEFAULT_EXTERNAL_WS_URL = 'wss://api.legend.trade/arena/ws'
 const EXTERNAL_WS_URL = process.env['EXTERNAL_WS_URL'] ?? DEFAULT_EXTERNAL_WS_URL
+const ARENA_COMPETITION_BASE_URL = process.env['ARENA_COMPETITION_BASE_URL'] ?? 'https://api.legend.trade/arena/competition'
 
 const BASE_DELAY_MS = 1_000
 const MAX_DELAY_MS = 30_000
@@ -20,6 +22,7 @@ let attempt = 0
 let destroyed = false
 let suppressReconnectOnClose = false
 let subscribedCompetitionId: string | null = null
+const pendingPnlHydrationCompetitionIds = new Set<string>()
 
 // ── Public API ─────────────────────────────────────────────────────────────────
 
@@ -164,6 +167,7 @@ export function destroyExternal(): void {
     socket?.terminate()
     socket = null
     subscribedCompetitionId = null
+    pendingPnlHydrationCompetitionIds.clear()
     patchConnectionState({
         status: 'disconnected',
         disconnectedAt: new Date().toISOString(),
@@ -172,6 +176,8 @@ export function destroyExternal(): void {
 }
 
 export function subscribeExternalCompetition(competitionId: string): void {
+    void hydrateCompetitionPnl(competitionId)
+
     if (!socket || socket.readyState !== WebSocket.OPEN) {
         return
     }
@@ -191,6 +197,59 @@ export function subscribeExternalCompetition(competitionId: string): void {
 
 function parseMessage(raw: string): unknown {
     return JSON.parse(raw)
+}
+
+async function hydrateCompetitionPnl(competitionId: string): Promise<void> {
+    if (competitionId.length === 0 || pendingPnlHydrationCompetitionIds.has(competitionId)) {
+        return
+    }
+
+    pendingPnlHydrationCompetitionIds.add(competitionId)
+    try {
+        const upstreamUrl = new URL(`${ARENA_COMPETITION_BASE_URL}/pnl-chart`)
+        upstreamUrl.searchParams.set('competition_id', competitionId)
+
+        const response = await fetch(upstreamUrl, {
+            headers: {
+                Accept: 'application/json',
+            },
+        })
+
+        if (!response.ok) {
+            console.warn('[external ws] failed to hydrate pnl snapshot', {
+                competitionId,
+                status: response.status,
+            })
+            return
+        }
+
+        const payload: unknown = await response.json()
+        if (!isPnlDataset(payload)) {
+            console.warn('[external ws] invalid pnl snapshot payload', { competitionId })
+            return
+        }
+
+        applyCompetitionEnvelope({
+            channel: 'pnl',
+            data: payload,
+        })
+    } catch (error) {
+        console.warn('[external ws] failed to hydrate pnl snapshot', {
+            competitionId,
+            error: error instanceof Error ? error.message : String(error),
+        })
+    } finally {
+        pendingPnlHydrationCompetitionIds.delete(competitionId)
+    }
+}
+
+function isPnlDataset(value: unknown): value is PnlDataset {
+    return typeof value === 'object'
+        && value !== null
+        && typeof (value as Record<string, unknown>)['competition_id'] === 'string'
+        && typeof (value as Record<string, unknown>)['resolution_ms'] === 'number'
+        && typeof (value as Record<string, unknown>)['traders'] === 'object'
+        && (value as Record<string, unknown>)['traders'] !== null
 }
 
 function isConnectedPongEnvelope(value: unknown): value is { channel: 'connected'; data: { pong: true } } {

@@ -287,7 +287,6 @@
 			</label>
 			<div class="pill">Selected <strong id="competition-summary">none</strong></div>
 			<div class="pill">Status <strong id="competition-status">unknown</strong></div>
-			<div class="pill">Participants <strong id="competition-count">0</strong></div>
 			<div class="toolbar-actions">
 				<button id="reconnect-external" class="pill" type="button">Clear graph</button>
 				<button id="start-simulation" class="pill" type="button">Start simulation</button>
@@ -322,7 +321,6 @@
 		const competitionSelectEl = document.getElementById('competition-select')
 		const competitionSummaryEl = document.getElementById('competition-summary')
 		const competitionStatusEl = document.getElementById('competition-status')
-		const competitionCountEl = document.getElementById('competition-count')
 		const reconnectExternalButtonEl = document.getElementById('reconnect-external')
 		const startSimulationButtonEl = document.getElementById('start-simulation')
 		const stopSimulationButtonEl = document.getElementById('stop-simulation')
@@ -642,7 +640,6 @@
 				? 'none'
 				: `${selectedCompetition.name} (${selectedCompetition.competition_id})`
 			competitionStatusEl.textContent = selectedCompetition?.status ?? 'unknown'
-			competitionCountEl.textContent = String(selectedCompetition?.participant_count ?? 0)
 		}
 
 		function syncCompetitionActionAvailability(hasSelection) {
