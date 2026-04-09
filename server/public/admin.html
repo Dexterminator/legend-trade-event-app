@@ -157,13 +157,6 @@
 			gap: 14px;
 		}
 
-		.avatar {
-			width: 68px;
-			height: 68px;
-			border-radius: 12px;
-			object-fit: cover;
-		}
-
 		.identity {
 			min-width: 0;
 			display: flex;
@@ -289,8 +282,16 @@
 			<div class="pill"><span id="status-dot" class="dot"></span><strong id="status-text">Connecting</strong>
 			</div>
 			<div class="pill">Updated <strong id="updated-at">never</strong></div>
+			<label class="pill" for="competition-select">Competition
+				<select id="competition-select"></select>
+			</label>
+			<div class="pill">Selected <strong id="competition-summary">none</strong></div>
+			<div class="pill">Status <strong id="competition-status">unknown</strong></div>
+			<div class="pill">Participants <strong id="competition-count">0</strong></div>
 			<div class="toolbar-actions">
 				<button id="reconnect-external" class="pill" type="button">Clear graph</button>
+				<button id="start-simulation" class="pill" type="button">Start simulation</button>
+				<button id="stop-simulation" class="pill" type="button">Stop simulation</button>
 				<button id="spawn-fake-trade" class="pill" type="button">Spawn fake trade</button>
 				<button id="eliminate-bottom-half" class="pill" type="button">Eliminate bottom half</button>
 				<button id="reset-eliminations" class="pill" type="button">Reset eliminations</button>
@@ -318,20 +319,32 @@
 		const statusDotEl = document.getElementById('status-dot')
 		const statusTextEl = document.getElementById('status-text')
 		const updatedAtEl = document.getElementById('updated-at')
+		const competitionSelectEl = document.getElementById('competition-select')
+		const competitionSummaryEl = document.getElementById('competition-summary')
+		const competitionStatusEl = document.getElementById('competition-status')
+		const competitionCountEl = document.getElementById('competition-count')
 		const reconnectExternalButtonEl = document.getElementById('reconnect-external')
+		const startSimulationButtonEl = document.getElementById('start-simulation')
+		const stopSimulationButtonEl = document.getElementById('stop-simulation')
 		const spawnFakeTradeButtonEl = document.getElementById('spawn-fake-trade')
 		const eliminateBottomHalfButtonEl = document.getElementById('eliminate-bottom-half')
 		const resetEliminationsButtonEl = document.getElementById('reset-eliminations')
 		const cardElements = new Map()
 		const pendingEliminationUpdates = new Set()
 		let emptyStateEl = null
+		let selectedCompetitionId = null
+		let competitionsLoaded = false
+		let competitionSelectionPending = false
 		let reconnectExternalPending = false
+		let startSimulationPending = false
+		let stopSimulationPending = false
 		let spawnFakeTradePending = false
 		let eliminateBottomHalfPending = false
 		let resetEliminationsPending = false
 
 		async function refresh() {
 			try {
+				await refreshCompetitions()
 				const response = await fetch('/debug/state', { cache: 'no-store' })
 				if (!response.ok) {
 					throw new Error(`HTTP ${response.status}`)
@@ -341,6 +354,51 @@
 				render(nextState)
 			} catch (error) {
 				renderError(error instanceof Error ? error.message : String(error))
+			}
+		}
+
+		async function refreshCompetitions() {
+			const response = await fetch('/admin/competitions', { cache: 'no-store' })
+			if (!response.ok) {
+				throw new Error(`HTTP ${response.status}`)
+			}
+
+			const payload = await response.json()
+			selectedCompetitionId = typeof payload?.selectedCompetitionId === 'string' ? payload.selectedCompetitionId : null
+			syncCompetitionOptions(Array.isArray(payload?.competitions) ? payload.competitions : [], selectedCompetitionId)
+			competitionsLoaded = true
+		}
+
+		async function selectCompetitionAction(competitionId) {
+			if (competitionSelectionPending) {
+				competitionSelectEl.value = selectedCompetitionId ?? ''
+				return
+			}
+
+			competitionSelectionPending = true
+			competitionSelectEl.disabled = true
+
+			try {
+				const response = await fetch('/admin/competitions/select', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ competition_id: competitionId }),
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`)
+				}
+
+				selectedCompetitionId = competitionId
+				await refresh()
+			} catch (error) {
+				competitionSelectEl.value = selectedCompetitionId ?? ''
+				renderError(error instanceof Error ? error.message : String(error))
+			} finally {
+				competitionSelectionPending = false
+				competitionSelectEl.disabled = false
 			}
 		}
 
@@ -372,6 +430,64 @@
 				reconnectExternalPending = false
 				reconnectExternalButtonEl.disabled = false
 				reconnectExternalButtonEl.textContent = 'Clear graph'
+			}
+		}
+
+		async function startSimulationAction() {
+			if (startSimulationPending) {
+				return
+			}
+
+			startSimulationPending = true
+			startSimulationButtonEl.disabled = true
+			startSimulationButtonEl.textContent = 'Starting...'
+
+			try {
+				const response = await fetch('/arena/simulate', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`)
+				}
+			} catch (error) {
+				renderError(error instanceof Error ? error.message : String(error))
+			} finally {
+				startSimulationPending = false
+				startSimulationButtonEl.disabled = false
+				startSimulationButtonEl.textContent = 'Start simulation'
+			}
+		}
+
+		async function stopSimulationAction() {
+			if (stopSimulationPending) {
+				return
+			}
+
+			stopSimulationPending = true
+			stopSimulationButtonEl.disabled = true
+			stopSimulationButtonEl.textContent = 'Stopping...'
+
+			try {
+				const response = await fetch('/arena/simulate/stop', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`)
+				}
+			} catch (error) {
+				renderError(error instanceof Error ? error.message : String(error))
+			} finally {
+				stopSimulationPending = false
+				stopSimulationButtonEl.disabled = false
+				stopSimulationButtonEl.textContent = 'Stop simulation'
 			}
 		}
 
@@ -468,10 +584,17 @@
 
 		function render(nextState) {
 			const status = nextState?.connection?.status ?? 'disconnected'
+			selectedCompetitionId = typeof nextState?.selectedCompetitionId === 'string'
+				? nextState.selectedCompetitionId
+				: selectedCompetitionId
+			const availableCompetitions = Array.isArray(nextState?.availableCompetitions) ? nextState.availableCompetitions : []
 			const updatedAt = nextState?.competition?.leaderboard?.ts ?? nextState?.connection?.updatedAt ?? null
 			const traders = Array.isArray(nextState?.competition?.leaderboard?.traders)
 				? nextState.competition.leaderboard.traders
 				: []
+			syncCompetitionOptions(availableCompetitions, selectedCompetitionId)
+			syncSelectedCompetitionMetadata(availableCompetitions, selectedCompetitionId)
+			syncCompetitionActionAvailability(Boolean(selectedCompetitionId))
 
 			statusDotEl.classList.toggle('live', status === 'connected')
 			statusTextEl.textContent = status
@@ -491,6 +614,43 @@
 			statusTextEl.textContent = 'error'
 			updatedAtEl.textContent = 'unavailable'
 			renderEmptyState(`Failed to load state: ${message}`)
+		}
+
+		function syncCompetitionOptions(competitions, selectedId) {
+			const nextOptions = [{ competition_id: '', name: competitionsLoaded ? 'Select competition' : 'Loading competitions...' }, ...competitions]
+			competitionSelectEl.replaceChildren()
+
+			for (const competition of nextOptions) {
+				const option = document.createElement('option')
+				option.value = competition.competition_id ?? ''
+				if (!competition.competition_id) {
+					option.textContent = competition.name
+				} else {
+					option.textContent = `${competition.name} (${competition.competition_id})`
+				}
+				competitionSelectEl.append(option)
+			}
+
+			competitionSelectEl.value = selectedId ?? ''
+			competitionSelectEl.disabled = competitionSelectionPending || competitions.length === 0
+		}
+
+		function syncSelectedCompetitionMetadata(competitions, selectedId) {
+			const selectedCompetition = competitions.find((competition) => competition.competition_id === selectedId) ?? null
+
+			competitionSummaryEl.textContent = selectedCompetition === null
+				? 'none'
+				: `${selectedCompetition.name} (${selectedCompetition.competition_id})`
+			competitionStatusEl.textContent = selectedCompetition?.status ?? 'unknown'
+			competitionCountEl.textContent = String(selectedCompetition?.participant_count ?? 0)
+		}
+
+		function syncCompetitionActionAvailability(hasSelection) {
+			startSimulationButtonEl.disabled = startSimulationPending
+			stopSimulationButtonEl.disabled = !hasSelection || stopSimulationPending
+			spawnFakeTradeButtonEl.disabled = !hasSelection || spawnFakeTradePending
+			eliminateBottomHalfButtonEl.disabled = !hasSelection || eliminateBottomHalfPending
+			resetEliminationsButtonEl.disabled = !hasSelection || resetEliminationsPending
 		}
 
 		function syncCards(traders) {
@@ -522,10 +682,6 @@
 			const header = document.createElement('div')
 			header.className = 'card-header'
 
-			const avatar = document.createElement('img')
-			avatar.className = 'avatar'
-			avatar.loading = 'lazy'
-
 			const identity = document.createElement('div')
 			identity.className = 'identity'
 
@@ -538,7 +694,7 @@
 			identity.append(username, country)
 
 			const eliminationToggle = createToggle(trader.user_id)
-			header.append(avatar, identity)
+			header.append(identity)
 
 			const stats = document.createElement('div')
 			stats.className = 'stats'
@@ -558,7 +714,6 @@
 
 			const elements = {
 				root,
-				avatar,
 				username,
 				country,
 				rankValue,
@@ -606,8 +761,6 @@
 
 		function updateCard(elements, trader, totalTraders) {
 			elements.root.classList.toggle('eliminated', Boolean(trader.is_eliminated))
-			elements.avatar.src = trader.avatar_url
-			elements.avatar.alt = `${trader.username} avatar`
 			elements.username.textContent = trader.username
 			elements.country.textContent = trader.country_code
 			setRankValue(elements.rankValue, trader.rank, totalTraders)
@@ -720,6 +873,24 @@
 
 		reconnectExternalButtonEl.addEventListener('click', () => {
 			void reconnectExternalFeed()
+		})
+
+		competitionSelectEl.addEventListener('change', () => {
+			const competitionId = competitionSelectEl.value
+			if (competitionId.length === 0 || competitionId === selectedCompetitionId) {
+				competitionSelectEl.value = selectedCompetitionId ?? ''
+				return
+			}
+
+			void selectCompetitionAction(competitionId)
+		})
+
+		startSimulationButtonEl.addEventListener('click', () => {
+			void startSimulationAction()
+		})
+
+		stopSimulationButtonEl.addEventListener('click', () => {
+			void stopSimulationAction()
 		})
 
 		spawnFakeTradeButtonEl.addEventListener('click', () => {

@@ -1,11 +1,12 @@
 import { WebSocket } from 'ws'
 import {
     applyCompetitionEnvelope,
+    getSelectedCompetitionId,
     patchConnectionState,
     type CompetitionEnvelope,
 } from './state.js'
 
-const DEFAULT_EXTERNAL_WS_URL = 'wss://testnet-api.legend.trade/competition/ws'
+const DEFAULT_EXTERNAL_WS_URL = 'wss://api.legend.trade/arena/ws'
 const EXTERNAL_WS_URL = process.env['EXTERNAL_WS_URL'] ?? DEFAULT_EXTERNAL_WS_URL
 
 const BASE_DELAY_MS = 1_000
@@ -18,6 +19,7 @@ let pingTimer: ReturnType<typeof setInterval> | null = null
 let attempt = 0
 let destroyed = false
 let suppressReconnectOnClose = false
+let subscribedCompetitionId: string | null = null
 
 // ── Public API ─────────────────────────────────────────────────────────────────
 
@@ -43,6 +45,7 @@ export function connectExternal(): void {
     currentSocket.on('open', () => {
         attempt = 0
         startPingLoop()
+        subscribedCompetitionId = null
         patchConnectionState({
             url: EXTERNAL_WS_URL,
             status: 'connected',
@@ -52,13 +55,18 @@ export function connectExternal(): void {
             lastError: null,
             updatedAt: new Date().toISOString(),
         })
+
+        const selectedCompetitionId = getSelectedCompetitionId()
+        if (selectedCompetitionId !== null) {
+            subscribeExternalCompetition(selectedCompetitionId)
+        }
     })
 
     currentSocket.on('message', (raw) => {
         try {
             const message = parseMessage(raw.toString())
 
-            if (isPongMessage(message)) {
+            if (isConnectedPongEnvelope(message)) {
                 patchConnectionState({
                     lastPongAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
@@ -72,6 +80,12 @@ export function connectExternal(): void {
             }
 
             applyCompetitionEnvelope(message)
+            if (message.channel === 'competitions') {
+                const selectedCompetitionId = getSelectedCompetitionId()
+                if (selectedCompetitionId !== null) {
+                    subscribeExternalCompetition(selectedCompetitionId)
+                }
+            }
             patchConnectionState({
                 status: 'connected',
                 lastError: null,
@@ -88,6 +102,7 @@ export function connectExternal(): void {
         if (socket === currentSocket) {
             socket = null
         }
+        subscribedCompetitionId = null
         patchConnectionState({
             status: 'disconnected',
             reconnectAttempt: attempt,
@@ -148,11 +163,28 @@ export function destroyExternal(): void {
     stopPingLoop()
     socket?.terminate()
     socket = null
+    subscribedCompetitionId = null
     patchConnectionState({
         status: 'disconnected',
         disconnectedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     })
+}
+
+export function subscribeExternalCompetition(competitionId: string): void {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        return
+    }
+
+    if (subscribedCompetitionId === competitionId) {
+        return
+    }
+
+    socket.send(JSON.stringify({
+        type: 'subscribe',
+        competition_id: competitionId,
+    }))
+    subscribedCompetitionId = competitionId
 }
 
 // ── Internal ───────────────────────────────────────────────────────────────────
@@ -161,10 +193,13 @@ function parseMessage(raw: string): unknown {
     return JSON.parse(raw)
 }
 
-function isPongMessage(value: unknown): value is { type: 'pong' } {
+function isConnectedPongEnvelope(value: unknown): value is { channel: 'connected'; data: { pong: true } } {
     return typeof value === 'object'
         && value !== null
-        && (value as Record<string, unknown>)['type'] === 'pong'
+        && (value as Record<string, unknown>)['channel'] === 'connected'
+        && typeof (value as Record<string, unknown>)['data'] === 'object'
+        && (value as Record<string, unknown>)['data'] !== null
+        && ((value as Record<string, unknown>)['data'] as Record<string, unknown>)['pong'] === true
 }
 
 function isCompetitionEnvelope(value: unknown): value is CompetitionEnvelope {
@@ -174,6 +209,7 @@ function isCompetitionEnvelope(value: unknown): value is CompetitionEnvelope {
 
     const channel = (value as Record<string, unknown>)['channel']
     return channel === 'connected'
+        || channel === 'competitions'
         || channel === 'activity'
         || channel === 'leaderboard'
         || channel === 'pnl'

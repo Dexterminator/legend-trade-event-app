@@ -5,7 +5,7 @@ const SYMBOL_ICON_BASE_URL := "https://legend-trade-dev.s3.amazonaws.com/token-i
 const SYMBOL_ICON_PROXY_PATH := "/token-images/%s.png"
 const PRELOADED_SYMBOLS := [
 	"ETH",
-	"$HYPE",
+	"HYPE",
 	"AVAX",
 	"DOGE",
 	"ARB",

@@ -2,11 +2,22 @@ import { broadcast } from "./wsServer.js"
 
 export type ActivityAction = 'opened' | 'closed' | 'added' | 'reduced' | 'flipped'
 export type PositionSide = 'LONG' | 'SHORT'
-export type CompetitionChannel = 'connected' | 'activity' | 'leaderboard' | 'pnl' | 'pnl:tick'
+export type CompetitionChannel = 'connected' | 'competitions' | 'activity' | 'leaderboard' | 'pnl' | 'pnl:tick'
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
 export interface ConnectedMessage {
-    message: string
+    message?: string
+    pong?: boolean
+}
+
+export interface ActiveCompetitionEntry {
+    competition_id: string
+    env: string
+    name: string
+    status: string
+    participant_count: number
+    started_at: number
+    ends_at: number
 }
 
 export interface ActivityItem {
@@ -31,6 +42,7 @@ export interface LeaderboardPosition {
     side: PositionSide
     size_usd: number
     unrealized_pnl: number
+    leverage?: number
 }
 
 export interface LeaderboardTrader {
@@ -46,9 +58,13 @@ export interface LeaderboardTrader {
     volume_usd: number
     top_positions: LeaderboardPosition[]
     sparkline: number[]
+    total_positions?: number
+    avg_leverage?: number
+    avg_hold_time_ms?: number
 }
 
 export interface LeaderboardSnapshot {
+    competition_id?: string
     ts: number
     traders: LeaderboardTrader[]
 }
@@ -61,6 +77,7 @@ export interface PnlSeriesPoint {
 
 export interface PnlTraderSeries {
     username: string
+    avatar_url?: string
     color: string
     initial_balance: number
     series: PnlSeriesPoint[]
@@ -78,12 +95,14 @@ export interface PnlTickValue {
 }
 
 export interface PnlTick {
+    competition_id?: string
     ts: number
     data: Record<string, PnlTickValue>
 }
 
 export type CompetitionEnvelope =
     | { channel: 'connected'; data: ConnectedMessage }
+    | { channel: 'competitions'; data: ActiveCompetitionEntry[] }
     | { channel: 'activity'; data: ActivityItem[] | ActivityItem }
     | { channel: 'leaderboard'; data: LeaderboardSnapshot }
     | { channel: 'pnl'; data: PnlDataset }
@@ -112,7 +131,21 @@ export interface CompetitionState {
 
 export interface State {
     connection: ConnectionState
+    availableCompetitions: ActiveCompetitionEntry[]
+    selectedCompetitionId: string | null
+    competitionStates: Record<string, CompetitionState>
     competition: CompetitionState
+}
+
+function createEmptyCompetitionState(): CompetitionState {
+    return {
+        connected: null,
+        leaderboard: null,
+        pnl: null,
+        latestPnlTick: null,
+        lastChannel: null,
+        lastMessageAt: null,
+    }
 }
 
 export const state: State = {
@@ -127,14 +160,10 @@ export const state: State = {
         lastError: null,
         updatedAt: new Date(0).toISOString(),
     },
-    competition: {
-        connected: null,
-        leaderboard: null,
-        pnl: null,
-        latestPnlTick: null,
-        lastChannel: null,
-        lastMessageAt: null,
-    },
+    availableCompetitions: [],
+    selectedCompetitionId: null,
+    competitionStates: {},
+    competition: createEmptyCompetitionState(),
 }
 
 const MAX_TRACKED_ACTIVITY_ITEMS = 256
@@ -151,22 +180,47 @@ export function patchConnectionState(partial: Partial<ConnectionState>): void {
     }
 }
 
+export function getSelectedCompetitionId(): string | null {
+    return state.selectedCompetitionId
+}
+
+export function getSelectedCompetitionState(): CompetitionState {
+    return state.competition
+}
+
+export function setSelectedCompetitionId(competitionId: string | null): void {
+    if (state.selectedCompetitionId === competitionId) {
+        return
+    }
+
+    state.selectedCompetitionId = competitionId
+    syncSelectedCompetitionState()
+}
+
 export function setTraderEliminated(userId: string, isEliminated: boolean): void {
-    const leaderboard = state.competition.leaderboard
+    const competitionId = state.selectedCompetitionId
+    const competitionState = getSelectedCompetitionState()
+    const leaderboard = competitionState.leaderboard
     if (leaderboard === null) {
         return
     }
 
-    state.competition.leaderboard = {
+    setCompetitionState(competitionId, {
+        ...competitionState,
         ...leaderboard,
-        traders: leaderboard.traders.map((trader) => trader.user_id === userId
-            ? { ...trader, is_eliminated: isEliminated }
-            : trader),
-    }
+        leaderboard: {
+            ...leaderboard,
+            traders: leaderboard.traders.map((trader) => trader.user_id === userId
+                ? { ...trader, is_eliminated: isEliminated }
+                : trader),
+        },
+    })
 }
 
 export function eliminateBottomHalf(): void {
-    const leaderboard = state.competition.leaderboard
+    const competitionId = state.selectedCompetitionId
+    const competitionState = getSelectedCompetitionState()
+    const leaderboard = competitionState.leaderboard
     if (leaderboard === null) {
         return
     }
@@ -188,27 +242,35 @@ export function eliminateBottomHalf(): void {
     const survivors = Math.ceil(activeTraders.length / 2)
     const eliminatedUserIds = new Set(activeTraders.slice(survivors).map((trader) => trader.user_id))
 
-    state.competition.leaderboard = {
-        ...leaderboard,
-        traders: leaderboard.traders.map((trader) => eliminatedUserIds.has(trader.user_id)
-            ? { ...trader, is_eliminated: true }
-            : trader),
-    }
+    setCompetitionState(competitionId, {
+        ...competitionState,
+        leaderboard: {
+            ...leaderboard,
+            traders: leaderboard.traders.map((trader) => eliminatedUserIds.has(trader.user_id)
+                ? { ...trader, is_eliminated: true }
+                : trader),
+        },
+    })
 }
 
 export function resetEliminations(): void {
-    const leaderboard = state.competition.leaderboard
+    const competitionId = state.selectedCompetitionId
+    const competitionState = getSelectedCompetitionState()
+    const leaderboard = competitionState.leaderboard
     if (leaderboard === null) {
         return
     }
 
-    state.competition.leaderboard = {
-        ...leaderboard,
-        traders: leaderboard.traders.map((trader) => ({
-            ...trader,
-            is_eliminated: false,
-        })),
-    }
+    setCompetitionState(competitionId, {
+        ...competitionState,
+        leaderboard: {
+            ...leaderboard,
+            traders: leaderboard.traders.map((trader) => ({
+                ...trader,
+                is_eliminated: false,
+            })),
+        },
+    })
 }
 
 export function spawnFakeTrade(): void {
@@ -245,12 +307,19 @@ export function spawnFakeTrade(): void {
 export function applyCompetitionEnvelope(envelope: CompetitionEnvelope): void {
     const receivedAt = new Date().toISOString()
 
-    state.competition.lastChannel = envelope.channel
-    state.competition.lastMessageAt = receivedAt
-
     switch (envelope.channel) {
         case 'connected':
             state.competition.connected = envelope.data
+            return
+
+        case 'competitions':
+            state.availableCompetitions = envelope.data.slice()
+            if (state.selectedCompetitionId === null || !state.availableCompetitions.some(
+                (competition) => competition.competition_id === state.selectedCompetitionId,
+            )) {
+                state.selectedCompetitionId = state.availableCompetitions[0]?.competition_id ?? null
+                syncSelectedCompetitionState()
+            }
             return
 
         case 'activity':
@@ -258,22 +327,31 @@ export function applyCompetitionEnvelope(envelope: CompetitionEnvelope): void {
             return
 
         case 'leaderboard':
-            state.competition.leaderboard = {
-                ...envelope.data,
-                traders: withManualTraderFields(envelope.data.traders, state.competition.leaderboard?.traders)
-                    .sort((left, right) => left.user_id.localeCompare(right.user_id)),
-            }
+            applyCompetitionStateUpdate(envelope, receivedAt, (competitionState) => ({
+                ...competitionState,
+                leaderboard: {
+                    ...envelope.data,
+                    traders: withManualTraderFields(envelope.data.traders, competitionState.leaderboard?.traders)
+                        .sort((left, right) => left.user_id.localeCompare(right.user_id)),
+                },
+            }))
             return
 
         case 'pnl':
-            state.competition.pnl = mergeLatestTickIntoPnl(envelope.data, state.competition.latestPnlTick)
+            applyCompetitionStateUpdate(envelope, receivedAt, (competitionState) => ({
+                ...competitionState,
+                pnl: mergeLatestTickIntoPnl(envelope.data, competitionState.latestPnlTick),
+            }))
             return
 
         case 'pnl:tick':
-            state.competition.latestPnlTick = envelope.data
-            state.competition.pnl = state.competition.pnl === null
-                ? null
-                : mergeLatestTickIntoPnl(state.competition.pnl, envelope.data)
+            applyCompetitionStateUpdate(envelope, receivedAt, (competitionState) => ({
+                ...competitionState,
+                latestPnlTick: envelope.data,
+                pnl: competitionState.pnl === null
+                    ? null
+                    : mergeLatestTickIntoPnl(competitionState.pnl, envelope.data),
+            }))
             return
     }
 }
@@ -288,7 +366,7 @@ function withManualTraderFields(nextTraders: LeaderboardTrader[], previousTrader
 }
 
 function getFakeTradeSourceTrader(): LeaderboardTrader | null {
-    const traders = state.competition.leaderboard?.traders ?? []
+    const traders = getSelectedCompetitionState().leaderboard?.traders ?? []
     if (traders.length === 0) {
         return null
     }
@@ -338,6 +416,59 @@ function trimTrackedActivity(): void {
         if (oldestId !== undefined) {
             trackedActivityById.delete(oldestId)
         }
+    }
+}
+
+function syncSelectedCompetitionState(): void {
+    const selectedCompetitionId = state.selectedCompetitionId
+    state.competition = selectedCompetitionId === null
+        ? createEmptyCompetitionState()
+        : getCompetitionState(selectedCompetitionId)
+}
+
+function getCompetitionState(competitionId: string): CompetitionState {
+    return state.competitionStates[competitionId] ?? createEmptyCompetitionState()
+}
+
+function setCompetitionState(competitionId: string | null, competitionState: CompetitionState): void {
+    if (competitionId !== null) {
+        state.competitionStates[competitionId] = competitionState
+    }
+
+    if (competitionId === state.selectedCompetitionId || competitionId === null) {
+        state.competition = competitionState
+    }
+}
+
+function applyCompetitionStateUpdate(
+    envelope: Exclude<CompetitionEnvelope, { channel: 'connected' | 'competitions' | 'activity' }>,
+    receivedAt: string,
+    updater: (competitionState: CompetitionState) => CompetitionState,
+): void {
+    const competitionId = getEnvelopeCompetitionId(envelope) ?? state.selectedCompetitionId
+    if (competitionId === null) {
+        return
+    }
+
+    const currentCompetitionState = getCompetitionState(competitionId)
+    const nextCompetitionState = updater({
+        ...currentCompetitionState,
+        lastChannel: envelope.channel,
+        lastMessageAt: receivedAt,
+    })
+    setCompetitionState(competitionId, nextCompetitionState)
+}
+
+function getEnvelopeCompetitionId(
+    envelope: Exclude<CompetitionEnvelope, { channel: 'connected' | 'competitions' | 'activity' }>,
+): string | null {
+    switch (envelope.channel) {
+        case 'leaderboard':
+            return typeof envelope.data.competition_id === 'string' ? envelope.data.competition_id : null
+        case 'pnl':
+            return typeof envelope.data.competition_id === 'string' ? envelope.data.competition_id : null
+        case 'pnl:tick':
+            return typeof envelope.data.competition_id === 'string' ? envelope.data.competition_id : null
     }
 }
 

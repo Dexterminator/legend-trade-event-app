@@ -8,9 +8,6 @@
 [ext_resource type="Texture2D" uid="uid://4d120o8dwwlx" path="res://assets/neutral-position.svg" id="5_r568l"]
 [ext_resource type="Texture2D" uid="uid://bfluwuj1myb8d" path="res://assets/pfp_border.png" id="6_87vf4"]
 [ext_resource type="Texture2D" uid="uid://fn5cdcyey50a" path="res://assets/flag_us.png" id="7_fqxgb"]
-[ext_resource type="Texture2D" uid="uid://cgkgjq1k4stft" path="res://assets/BTC.png" id="8_oghwe"]
-[ext_resource type="Texture2D" uid="uid://dwje5kcc6t0o3" path="res://assets/SOL.png" id="9_tcy7y"]
-[ext_resource type="Texture2D" uid="uid://bl8l1htj0piq" path="res://assets/ETH.png" id="10_7ty48"]
 [ext_resource type="FontFile" uid="uid://b2ipp26hqd2i1" path="res://assets/Geist_Mono/static/GeistMono-Regular.ttf" id="11_5p1tb"]
 [ext_resource type="FontFile" uid="uid://g8chxwbm1455" path="res://assets/Geist_Mono/static/GeistMono-SemiBold.ttf" id="12_l56je"]
 
@@ -88,21 +85,18 @@ alignment = 1
 [node name="TextureRect" type="TextureRect" parent="HBoxContainer/TopPositions" unique_id=395876630]
 custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
-texture = ExtResource("8_oghwe")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="TextureRect2" type="TextureRect" parent="HBoxContainer/TopPositions" unique_id=82287562]
 custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
-texture = ExtResource("10_7ty48")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="TextureRect3" type="TextureRect" parent="HBoxContainer/TopPositions" unique_id=1618009251]
 custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
-texture = ExtResource("9_tcy7y")
 expand_mode = 1
 stretch_mode = 5
 

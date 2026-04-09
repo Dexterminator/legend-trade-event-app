@@ -2,13 +2,14 @@ import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { eliminateBottomHalf, resetEliminations, setTraderEliminated, spawnFakeTrade, state } from './state.js'
+import { eliminateBottomHalf, getSelectedCompetitionId, resetEliminations, setSelectedCompetitionId, setTraderEliminated, spawnFakeTrade, state } from './state.js'
 import { createWsServer, closeWsServer, startStateBroadcast } from './wsServer.js'
-import { connectExternal, destroyExternal, reconnectExternal } from './wsExternal.js'
+import { connectExternal, destroyExternal, reconnectExternal, subscribeExternalCompetition } from './wsExternal.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const PORT = Number(process.env['PORT'] ?? 5050)
+const ARENA_COMPETITION_BASE_URL = process.env['ARENA_COMPETITION_BASE_URL'] ?? 'https://api.legend.trade/arena/competition'
 const TOKEN_IMAGE_BASE_URL = 'https://legend-trade-dev.s3.amazonaws.com/token-images'
 
 // Served after `npm run build && export.sh` copies the Godot web export here
@@ -57,6 +58,45 @@ app.get('/debug/state', (_req, res) => {
     res.json(state)
 })
 
+app.get('/admin/competitions', (_req, res) => {
+    res.json({
+        competitions: state.availableCompetitions,
+        selectedCompetitionId: state.selectedCompetitionId,
+    })
+})
+
+app.get('/arena/list', (req, res) => {
+    void proxyArenaRequest(req, res, '/list')
+})
+
+app.get('/arena/info', (req, res) => {
+    void proxyArenaRequest(req, res, '/info')
+})
+
+app.get('/arena/leaderboard', (req, res) => {
+    void proxyArenaRequest(req, res, '/leaderboard')
+})
+
+app.get('/arena/activity', (req, res) => {
+    void proxyArenaRequest(req, res, '/activity')
+})
+
+app.get('/arena/pnl-chart', (req, res) => {
+    void proxyArenaRequest(req, res, '/pnl-chart')
+})
+
+app.get('/arena/stats', (req, res) => {
+    void proxyArenaRequest(req, res, '/stats')
+})
+
+app.post('/arena/simulate', (req, res) => {
+    void proxyArenaRequest(req, res, '/simulate', { method: 'POST' })
+})
+
+app.post('/arena/simulate/stop', (req, res) => {
+    void proxyArenaRequest(req, res, '/simulate/stop', { method: 'POST' })
+})
+
 app.post('/admin/traders/:userId/elimination', (req, res) => {
     const userId = req.params['userId']
     const isEliminated = req.body?.['is_eliminated']
@@ -72,6 +112,24 @@ app.post('/admin/traders/:userId/elimination', (req, res) => {
     }
 
     setTraderEliminated(userId, isEliminated)
+    res.status(204).end()
+})
+
+app.post('/admin/competitions/select', (req, res) => {
+    const competitionId = req.body?.['competition_id']
+    if (typeof competitionId !== 'string' || competitionId.length === 0) {
+        res.status(400).json({ error: 'competition_id must be a non-empty string' })
+        return
+    }
+
+    const competitionExists = state.availableCompetitions.some((competition) => competition.competition_id === competitionId)
+    if (!competitionExists) {
+        res.status(404).json({ error: 'competition not found' })
+        return
+    }
+
+    setSelectedCompetitionId(competitionId)
+    subscribeExternalCompetition(competitionId)
     res.status(204).end()
 })
 
@@ -129,3 +187,60 @@ function shutdown(signal: string): void {
 
 process.on('SIGINT', () => shutdown('SIGINT'))
 process.on('SIGTERM', () => shutdown('SIGTERM'))
+
+async function proxyArenaRequest(
+    req: express.Request,
+    res: express.Response,
+    pathName: string,
+    init: RequestInit = {},
+): Promise<void> {
+    const upstreamUrl = new URL(`${ARENA_COMPETITION_BASE_URL}${pathName}`)
+
+    const selectedCompetitionId = getSelectedCompetitionId()
+    if (selectedCompetitionId !== null && !req.query['competition_id']) {
+        upstreamUrl.searchParams.set('competition_id', selectedCompetitionId)
+    }
+
+    for (const [key, rawValue] of Object.entries(req.query)) {
+        if (typeof rawValue === 'string' && rawValue.length > 0) {
+            upstreamUrl.searchParams.set(key, rawValue)
+            continue
+        }
+
+        if (Array.isArray(rawValue)) {
+            for (const value of rawValue) {
+                if (typeof value === 'string' && value.length > 0) {
+                    upstreamUrl.searchParams.append(key, value)
+                }
+            }
+        }
+    }
+
+    try {
+        const upstream = await fetch(upstreamUrl, {
+            method: init.method ?? req.method,
+            headers: {
+                Accept: 'application/json',
+                ...init.headers,
+            },
+        })
+
+        res.status(upstream.status)
+
+        const contentType = upstream.headers.get('content-type')
+        if (contentType !== null) {
+            res.setHeader('Content-Type', contentType)
+        }
+
+        const responseText = await upstream.text()
+        if (responseText.length === 0) {
+            res.end()
+            return
+        }
+
+        res.send(responseText)
+    } catch (error) {
+        console.error('Arena competition proxy request failed', { pathName, error })
+        res.status(502).json({ error: 'arena competition proxy failed' })
+    }
+}

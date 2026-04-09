@@ -1,7 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import type { Server } from 'node:http'
 import { URL } from 'node:url'
-import { state } from './state.js'
+import { getSelectedCompetitionState } from './state.js'
 
 let appWss: WebSocketServer | null = null
 let pnlChartWss: WebSocketServer | null = null
@@ -97,16 +97,18 @@ export function startStateBroadcast(): void {
     }
 
     broadcastInterval = setInterval(() => {
+        const competitionState = getSelectedCompetitionState()
+
         broadcast({
             type: 'leaderboard',
-            payload: state.competition.leaderboard,
+            payload: competitionState.leaderboard,
         })
 
         broadcastPnlChart({
             type: 'pnl_chart',
             payload: {
-                leaderboard: state.competition.leaderboard,
-                pnl: state.competition.pnl,
+                leaderboard: competitionState.leaderboard,
+                pnl: competitionState.pnl,
             },
         })
     }, 500)
