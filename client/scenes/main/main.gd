@@ -69,7 +69,7 @@ func _spawn_overlay() -> void:
 				key = kv[1].to_lower().strip_edges()
 				break
 	else:
-		key = "top_bar" # default for native/editor
+		key = "recent_trades" # default for native/editor
 	if key in OVERLAYS:
 		var overlay: Control = (OVERLAYS[key] as PackedScene).instantiate()
 		overlay.focus_mode = Control.FOCUS_NONE
@@ -93,13 +93,19 @@ func _schedule_reconnect() -> void:
 
 
 func _handle_message(raw: String) -> void:
-	var data: Dictionary = JSON.parse_string(raw)
-	if not data is Dictionary:
+	var parsed_data: Variant = JSON.parse_string(raw)
+	if not parsed_data is Dictionary:
 		push_warning("[Main] Unexpected message format: " + raw.left(120))
 		return
+	var data: Dictionary = parsed_data
 
 	var msg_type: String = data.get("type", "")
-	var payload: Dictionary = data.get("payload", {})
+	var payload_value: Variant = data.get("payload", {})
+	if not payload_value is Dictionary:
+		if msg_type != "connected":
+			push_warning("[Main] Unexpected payload format for %s" % msg_type)
+		return
+	var payload: Dictionary = payload_value
 
 	match msg_type:
 		"connected":

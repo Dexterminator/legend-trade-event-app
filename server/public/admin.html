@@ -291,6 +291,7 @@
 			<div class="pill">Updated <strong id="updated-at">never</strong></div>
 			<div class="toolbar-actions">
 				<button id="reconnect-external" class="pill" type="button">Clear graph</button>
+				<button id="spawn-fake-trade" class="pill" type="button">Spawn fake trade</button>
 				<button id="eliminate-bottom-half" class="pill" type="button">Eliminate bottom half</button>
 				<button id="reset-eliminations" class="pill" type="button">Reset eliminations</button>
 			</div>
@@ -318,12 +319,14 @@
 		const statusTextEl = document.getElementById('status-text')
 		const updatedAtEl = document.getElementById('updated-at')
 		const reconnectExternalButtonEl = document.getElementById('reconnect-external')
+		const spawnFakeTradeButtonEl = document.getElementById('spawn-fake-trade')
 		const eliminateBottomHalfButtonEl = document.getElementById('eliminate-bottom-half')
 		const resetEliminationsButtonEl = document.getElementById('reset-eliminations')
 		const cardElements = new Map()
 		const pendingEliminationUpdates = new Set()
 		let emptyStateEl = null
 		let reconnectExternalPending = false
+		let spawnFakeTradePending = false
 		let eliminateBottomHalfPending = false
 		let resetEliminationsPending = false
 
@@ -369,6 +372,35 @@
 				reconnectExternalPending = false
 				reconnectExternalButtonEl.disabled = false
 				reconnectExternalButtonEl.textContent = 'Clear graph'
+			}
+		}
+
+		async function spawnFakeTradeAction() {
+			if (spawnFakeTradePending) {
+				return
+			}
+
+			spawnFakeTradePending = true
+			spawnFakeTradeButtonEl.disabled = true
+			spawnFakeTradeButtonEl.textContent = 'Spawning...'
+
+			try {
+				const response = await fetch('/admin/trades/spawn-fake', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`)
+				}
+			} catch (error) {
+				renderError(error instanceof Error ? error.message : String(error))
+			} finally {
+				spawnFakeTradePending = false
+				spawnFakeTradeButtonEl.disabled = false
+				spawnFakeTradeButtonEl.textContent = 'Spawn fake trade'
 			}
 		}
 
@@ -688,6 +720,10 @@
 
 		reconnectExternalButtonEl.addEventListener('click', () => {
 			void reconnectExternalFeed()
+		})
+
+		spawnFakeTradeButtonEl.addEventListener('click', () => {
+			void spawnFakeTradeAction()
 		})
 
 		eliminateBottomHalfButtonEl.addEventListener('click', () => {

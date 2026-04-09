@@ -140,6 +140,9 @@ export const state: State = {
 const MAX_TRACKED_ACTIVITY_ITEMS = 256
 const trackedActivityById = new Map<string, ActivityItem>()
 const trackedActivityOrder: string[] = []
+const FAKE_TRADE_SYMBOLS = ['BTC', 'DOGE'] as const
+const FAKE_TRADE_ACTIONS: ActivityAction[] = ['opened', 'closed']
+const FAKE_TRADE_SIDES: PositionSide[] = ['LONG', 'SHORT']
 
 export function patchConnectionState(partial: Partial<ConnectionState>): void {
     state.connection = {
@@ -208,6 +211,37 @@ export function resetEliminations(): void {
     }
 }
 
+export function spawnFakeTrade(): void {
+    const trader = getFakeTradeSourceTrader()
+    const symbol = sample(FAKE_TRADE_SYMBOLS)
+    const action = sample(FAKE_TRADE_ACTIONS)
+    const side = sample(FAKE_TRADE_SIDES)
+    const sizeUsd = randomInt(2_500, 35_000)
+    const price = symbol === 'BTC'
+        ? randomInt(60_000, 72_000)
+        : randomFloat(0.08, 0.32)
+    const closedPnl = action === 'closed'
+        ? randomSignedFloat(120, 2_400)
+        : null
+
+    upsertTrackedActivity({
+        id: `fake-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        ts: Date.now(),
+        user_id: trader?.user_id ?? 'fake-trader',
+        username: trader?.username ?? 'Legend Whale',
+        avatar_url: trader?.avatar_url ?? '',
+        action,
+        symbol,
+        side,
+        size_usd: sizeUsd,
+        price,
+        leverage: randomInt(2, 20),
+        margin_usd: randomInt(400, 6_000),
+        closed_pnl: closedPnl,
+        closed_pnl_pct: closedPnl === null ? null : randomSignedFloat(0.8, 12.5),
+    })
+}
+
 export function applyCompetitionEnvelope(envelope: CompetitionEnvelope): void {
     const receivedAt = new Date().toISOString()
 
@@ -253,6 +287,15 @@ function withManualTraderFields(nextTraders: LeaderboardTrader[], previousTrader
     }))
 }
 
+function getFakeTradeSourceTrader(): LeaderboardTrader | null {
+    const traders = state.competition.leaderboard?.traders ?? []
+    if (traders.length === 0) {
+        return null
+    }
+
+    return traders[randomInt(0, traders.length - 1)] ?? null
+}
+
 function applyActivityEnvelope(activity: ActivityItem[] | ActivityItem): void {
     if (Array.isArray(activity)) {
         replaceTrackedActivity(activity)
@@ -296,6 +339,25 @@ function trimTrackedActivity(): void {
             trackedActivityById.delete(oldestId)
         }
     }
+}
+
+function randomInt(min: number, max: number): number {
+    const lower = Math.ceil(min)
+    const upper = Math.floor(max)
+    return Math.floor(Math.random() * (upper - lower + 1)) + lower
+}
+
+function randomFloat(min: number, max: number): number {
+    return Number((Math.random() * (max - min) + min).toFixed(4))
+}
+
+function randomSignedFloat(minMagnitude: number, maxMagnitude: number): number {
+    const magnitude = randomFloat(minMagnitude, maxMagnitude)
+    return Math.random() < 0.5 ? -magnitude : magnitude
+}
+
+function sample<T>(values: readonly T[]): T {
+    return values[randomInt(0, values.length - 1)]
 }
 
 function mergeLatestTickIntoPnl(pnl: PnlDataset, tick: PnlTick | null): PnlDataset {
