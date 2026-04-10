@@ -66,22 +66,33 @@ export function connectExternal(): void {
     })
 
     currentSocket.on('message', (raw) => {
+        const rawText = raw.toString()
+        let message: unknown
+
         try {
-            const message = parseMessage(raw.toString())
+            message = parseMessage(rawText)
+        } catch (error) {
+            console.warn('[external ws] invalid JSON message:', {
+                error: error instanceof Error ? error.message : String(error),
+                payload: rawText.slice(0, 160),
+            })
+            return
+        }
 
-            if (isConnectedPongEnvelope(message)) {
-                patchConnectionState({
-                    lastPongAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                })
-                return
-            }
+        if (isConnectedPongEnvelope(message)) {
+            patchConnectionState({
+                lastPongAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            })
+            return
+        }
 
-            if (!isCompetitionEnvelope(message)) {
-                console.warn('[external ws] unexpected message:', raw.toString().slice(0, 160))
-                return
-            }
+        if (!isCompetitionEnvelope(message)) {
+            console.warn('[external ws] unexpected message:', rawText.slice(0, 160))
+            return
+        }
 
+        try {
             applyCompetitionEnvelope(message)
             if (message.channel === 'competitions') {
                 const selectedCompetitionId = getSelectedCompetitionId()
@@ -94,8 +105,12 @@ export function connectExternal(): void {
                 lastError: null,
                 updatedAt: new Date().toISOString(),
             })
-        } catch {
-            console.warn('[external ws] unparseable message:', raw.toString().slice(0, 120))
+        } catch (error) {
+            console.warn('[external ws] failed to process message:', {
+                channel: message.channel,
+                error: error instanceof Error ? error.message : String(error),
+                payload: rawText.slice(0, 160),
+            })
         }
     })
 
@@ -186,11 +201,18 @@ export function subscribeExternalCompetition(competitionId: string): void {
         return
     }
 
-    socket.send(JSON.stringify({
-        type: 'subscribe',
-        competition_id: competitionId,
-    }))
-    subscribedCompetitionId = competitionId
+        try {
+            socket.send(JSON.stringify({
+                type: 'subscribe',
+                competition_id: competitionId,
+            }))
+            subscribedCompetitionId = competitionId
+        } catch (error) {
+            console.warn('[external ws] failed to send competition subscription', {
+                competitionId,
+                error: error instanceof Error ? error.message : String(error),
+            })
+        }
 }
 
 // ── Internal ───────────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ export default defineConfig({
         outDir: 'dist',
         target: 'node24',
         rollupOptions: {
+            external: ['ws'],
             output: {
                 format: 'esm',
                 entryFileNames: 'index.js',
@@ -13,8 +14,9 @@ export default defineConfig({
         },
     },
     ssr: {
-        // Bundle all dependencies into the single output file so
-        // no node_modules installation is needed in the release directory.
+        // Keep most dependencies bundled, but leave ws external because
+        // bundling it breaks its bufferUtil runtime helpers in production builds.
         noExternal: true,
+        external: ['ws'],
     },
 })

@@ -67,6 +67,8 @@ rm -rf "$RELEASE_DIR/server"
 mkdir -p "$RELEASE_DIR/server"
 cp -r "$SERVER_DIR/dist/." "$RELEASE_DIR/server/"
 cp -r "$PUBLIC_DIR" "$RELEASE_DIR/server/public"
+mkdir -p "$RELEASE_DIR/server/node_modules"
+cp -R "$SERVER_DIR/node_modules/ws" "$RELEASE_DIR/server/node_modules/ws"
 
 # ── 5. Package release archive ────────────────────────────────────────────────
 echo "==> [5/5] Creating release archive …"
