@@ -285,8 +285,6 @@
 			<label class="pill" for="competition-select">Competition
 				<select id="competition-select"></select>
 			</label>
-			<div class="pill">Selected <strong id="competition-summary">none</strong></div>
-			<div class="pill">Status <strong id="competition-status">unknown</strong></div>
 			<div class="toolbar-actions">
 				<button id="reconnect-external" class="pill" type="button">Clear graph</button>
 				<button id="start-simulation" class="pill" type="button">Start simulation</button>
@@ -319,8 +317,6 @@
 		const statusTextEl = document.getElementById('status-text')
 		const updatedAtEl = document.getElementById('updated-at')
 		const competitionSelectEl = document.getElementById('competition-select')
-		const competitionSummaryEl = document.getElementById('competition-summary')
-		const competitionStatusEl = document.getElementById('competition-status')
 		const reconnectExternalButtonEl = document.getElementById('reconnect-external')
 		const startSimulationButtonEl = document.getElementById('start-simulation')
 		const stopSimulationButtonEl = document.getElementById('stop-simulation')
@@ -592,7 +588,6 @@
 				? nextState.competition.leaderboard.traders
 				: []
 			syncCompetitionOptions(availableCompetitions, selectedCompetitionId)
-			syncSelectedCompetitionMetadata(availableCompetitions, selectedCompetitionId)
 			syncCompetitionActionAvailability(Boolean(selectedCompetitionId))
 
 			statusDotEl.classList.toggle('live', status === 'connected')
@@ -638,15 +633,6 @@
 
 			competitionSelectEl.value = selectedId ?? ''
 			competitionSelectEl.disabled = competitionSelectionPending || !competitionsLoaded
-		}
-
-		function syncSelectedCompetitionMetadata(competitions, selectedId) {
-			const selectedCompetition = competitions.find((competition) => competition.competition_id === selectedId) ?? null
-
-			competitionSummaryEl.textContent = selectedCompetition === null
-				? (selectedId ?? 'none')
-				: `${selectedCompetition.name} (${selectedCompetition.competition_id})`
-			competitionStatusEl.textContent = selectedCompetition?.status ?? (selectedId === null ? 'unknown' : 'not in poll')
 		}
 
 		function syncCompetitionActionAvailability(hasSelection) {
