@@ -377,19 +377,20 @@
 			competitionSelectEl.disabled = true
 
 			try {
+				const nextCompetitionId = competitionId.length === 0 ? null : competitionId
 				const response = await fetch('/admin/competitions/select', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 					},
-					body: JSON.stringify({ competition_id: competitionId }),
+					body: JSON.stringify({ competition_id: nextCompetitionId }),
 				})
 
 				if (!response.ok) {
 					throw new Error(`HTTP ${response.status}`)
 				}
 
-				selectedCompetitionId = competitionId
+				selectedCompetitionId = nextCompetitionId
 				await refresh()
 			} catch (error) {
 				competitionSelectEl.value = selectedCompetitionId ?? ''
@@ -615,7 +616,13 @@
 		}
 
 		function syncCompetitionOptions(competitions, selectedId) {
-			const nextOptions = [{ competition_id: '', name: competitionsLoaded ? 'Select competition' : 'Loading competitions...' }, ...competitions]
+			const nextOptions = [{ competition_id: '', name: competitionsLoaded ? 'No selection' : 'Loading competitions...' }, ...competitions]
+			if (selectedId !== null && !competitions.some((competition) => competition.competition_id === selectedId)) {
+				nextOptions.splice(1, 0, {
+					competition_id: selectedId,
+					name: `${selectedId} (ended)`,
+				})
+			}
 			competitionSelectEl.replaceChildren()
 
 			for (const competition of nextOptions) {
@@ -630,16 +637,16 @@
 			}
 
 			competitionSelectEl.value = selectedId ?? ''
-			competitionSelectEl.disabled = competitionSelectionPending || competitions.length === 0
+			competitionSelectEl.disabled = competitionSelectionPending || !competitionsLoaded
 		}
 
 		function syncSelectedCompetitionMetadata(competitions, selectedId) {
 			const selectedCompetition = competitions.find((competition) => competition.competition_id === selectedId) ?? null
 
 			competitionSummaryEl.textContent = selectedCompetition === null
-				? 'none'
+				? (selectedId ?? 'none')
 				: `${selectedCompetition.name} (${selectedCompetition.competition_id})`
-			competitionStatusEl.textContent = selectedCompetition?.status ?? 'unknown'
+			competitionStatusEl.textContent = selectedCompetition?.status ?? (selectedId === null ? 'unknown' : 'not in poll')
 		}
 
 		function syncCompetitionActionAvailability(hasSelection) {
@@ -874,7 +881,7 @@
 
 		competitionSelectEl.addEventListener('change', () => {
 			const competitionId = competitionSelectEl.value
-			if (competitionId.length === 0 || competitionId === selectedCompetitionId) {
+			if (competitionId === (selectedCompetitionId ?? '')) {
 				competitionSelectEl.value = selectedCompetitionId ?? ''
 				return
 			}

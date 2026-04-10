@@ -117,8 +117,15 @@ app.post('/admin/traders/:userId/elimination', (req, res) => {
 
 app.post('/admin/competitions/select', (req, res) => {
     const competitionId = req.body?.['competition_id']
+
+    if (competitionId === null || competitionId === '') {
+        setSelectedCompetitionId(null)
+        res.status(204).end()
+        return
+    }
+
     if (typeof competitionId !== 'string' || competitionId.length === 0) {
-        res.status(400).json({ error: 'competition_id must be a non-empty string' })
+        res.status(400).json({ error: 'competition_id must be a string or null' })
         return
     }
 

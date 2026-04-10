@@ -314,9 +314,7 @@ export function applyCompetitionEnvelope(envelope: CompetitionEnvelope): void {
 
         case 'competitions':
             state.availableCompetitions = envelope.data.slice()
-            if (state.selectedCompetitionId === null || !state.availableCompetitions.some(
-                (competition) => competition.competition_id === state.selectedCompetitionId,
-            )) {
+            if (state.selectedCompetitionId === null) {
                 state.selectedCompetitionId = state.availableCompetitions[0]?.competition_id ?? null
                 syncSelectedCompetitionState()
             }

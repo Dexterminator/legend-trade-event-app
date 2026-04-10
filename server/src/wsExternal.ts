@@ -201,18 +201,18 @@ export function subscribeExternalCompetition(competitionId: string): void {
         return
     }
 
-        try {
-            socket.send(JSON.stringify({
-                type: 'subscribe',
-                competition_id: competitionId,
-            }))
-            subscribedCompetitionId = competitionId
-        } catch (error) {
-            console.warn('[external ws] failed to send competition subscription', {
-                competitionId,
-                error: error instanceof Error ? error.message : String(error),
-            })
-        }
+    try {
+        socket.send(JSON.stringify({
+            type: 'subscribe',
+            competition_id: competitionId,
+        }))
+        subscribedCompetitionId = competitionId
+    } catch (error) {
+        console.warn('[external ws] failed to send competition subscription', {
+            competitionId,
+            error: error instanceof Error ? error.message : String(error),
+        })
+    }
 }
 
 // ── Internal ───────────────────────────────────────────────────────────────────
