@@ -55,7 +55,7 @@
 	<script>
 		(() => {
 			const WINDOW_MS = 30 * 60 * 1000;
-			const X_AXIS_LOOKAHEAD_MS = 5 * 60 * 1000;
+			const X_AXIS_LOOKAHEAD_MS = 3 * 60 * 1000;
 			const RENDER_DELAY_MS = 2 * 1000;
 			const Y_RANGE_HALF_LIFE_MS = 220;
 			const LABEL_POSITION_HALF_LIFE_MS = 140;
@@ -275,7 +275,6 @@
 				}
 
 				const latestKnownTs = Math.max(...filteredSeries.map((item) => item.points[item.points.length - 1].ts));
-				const displayedWindowEnd = Math.min(maxWindowEnd, latestKnownTs + X_AXIS_LOOKAHEAD_MS);
 				const targetPlayheadTs = replayActive
 					? getReplayPlayheadTs(windowStart, latestKnownTs)
 					: Math.max(windowStart, Math.min(maxWindowEnd, latestKnownTs - RENDER_DELAY_MS));
@@ -285,6 +284,9 @@
 				} else {
 					playheadTs = Math.min(playheadTs + frameDeltaMs, targetPlayheadTs);
 				}
+
+				const displayedDataEndTs = replayActive ? playheadTs : latestKnownTs;
+				const displayedWindowEnd = Math.min(maxWindowEnd, displayedDataEndTs + X_AXIS_LOOKAHEAD_MS);
 
 				const animatedSeries = filteredSeries
 					.map((item) => ({
