@@ -69,7 +69,7 @@
 			gap: 12px;
 		}
 
-		.toolbar-action-group + .toolbar-action-group {
+		.toolbar-action-group+.toolbar-action-group {
 			padding-left: 16px;
 			margin-left: 4px;
 			border-left: 1px solid rgba(255, 255, 255, 0.22);
@@ -363,12 +363,14 @@
 					<button id="stop-replay" class="pill" type="button">Stop chart replay</button>
 				</div>
 				<div class="toolbar-action-group">
-					<button id="start-simulation" class="pill" type="button">Start simulation</button>
-					<button id="stop-simulation" class="pill" type="button">Stop simulation</button>
-				</div>
-				<div class="toolbar-action-group">
 					<button id="eliminate-bottom-half" class="pill" type="button">Eliminate bottom half</button>
 					<button id="reset-eliminations" class="pill" type="button">Reset eliminations</button>
+				</div>
+			</div>
+			<div class="toolbar-actions">
+				<div class="toolbar-action-group">
+					<button id="start-simulation" class="pill" type="button">Start simulation</button>
+					<button id="stop-simulation" class="pill" type="button">Stop simulation</button>
 				</div>
 				<div class="toolbar-action-group">
 					<button id="reconnect-external" class="pill" type="button">Reconnect websocket</button>
