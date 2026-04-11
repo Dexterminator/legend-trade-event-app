@@ -2,8 +2,8 @@ import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { eliminateBottomHalf, getSelectedCompetitionId, resetEliminations, setSelectedCompetitionId, setTraderEliminated, spawnFakeTrade, state } from './state.js'
-import { createWsServer, closeWsServer, startStateBroadcast } from './wsServer.js'
+import { eliminateBottomHalf, getSelectedCompetitionId, resetEliminations, setSelectedCompetitionId, setTraderEliminated, spawnFakeTrade, startPnlChartReplay, state, stopPnlChartReplay } from './state.js'
+import { broadcastCurrentPnlChartReplayState, createWsServer, closeWsServer, startStateBroadcast } from './wsServer.js'
 import { connectExternal, destroyExternal, reconnectExternal, subscribeExternalCompetition } from './wsExternal.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -157,6 +157,23 @@ app.post('/admin/leaderboard/reset-eliminations', (_req, res) => {
 
 app.post('/admin/trades/spawn-fake', (_req, res) => {
     spawnFakeTrade()
+    res.status(204).end()
+})
+
+app.post('/admin/pnl-chart/replay/start', (_req, res) => {
+    const result = startPnlChartReplay(60_000)
+    if (!result.ok) {
+        res.status(400).json({ error: result.error })
+        return
+    }
+
+    broadcastCurrentPnlChartReplayState()
+    res.status(204).end()
+})
+
+app.post('/admin/pnl-chart/replay/stop', (_req, res) => {
+    stopPnlChartReplay()
+    broadcastCurrentPnlChartReplayState()
     res.status(204).end()
 })
 

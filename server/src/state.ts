@@ -89,6 +89,11 @@ export interface PnlDataset {
     traders: Record<string, PnlTraderSeries>
 }
 
+export interface PnlChartSnapshot {
+    leaderboard: LeaderboardSnapshot
+    pnl: PnlDataset
+}
+
 export interface PnlTickValue {
     equity: number
     pnl_pct: number
@@ -129,12 +134,21 @@ export interface CompetitionState {
     lastMessageAt: string | null
 }
 
+export interface PnlChartReplayState {
+    isActive: boolean
+    competitionId: string | null
+    startedAt: number | null
+    durationMs: number
+    snapshot: PnlChartSnapshot | null
+}
+
 export interface State {
     connection: ConnectionState
     availableCompetitions: ActiveCompetitionEntry[]
     selectedCompetitionId: string | null
     competitionStates: Record<string, CompetitionState>
     competition: CompetitionState
+    pnlChartReplay: PnlChartReplayState
 }
 
 function createEmptyCompetitionState(): CompetitionState {
@@ -145,6 +159,16 @@ function createEmptyCompetitionState(): CompetitionState {
         latestPnlTick: null,
         lastChannel: null,
         lastMessageAt: null,
+    }
+}
+
+function createEmptyPnlChartReplayState(): PnlChartReplayState {
+    return {
+        isActive: false,
+        competitionId: null,
+        startedAt: null,
+        durationMs: 60_000,
+        snapshot: null,
     }
 }
 
@@ -164,6 +188,7 @@ export const state: State = {
     selectedCompetitionId: null,
     competitionStates: {},
     competition: createEmptyCompetitionState(),
+    pnlChartReplay: createEmptyPnlChartReplayState(),
 }
 
 const MAX_TRACKED_ACTIVITY_ITEMS = 256
@@ -193,8 +218,51 @@ export function setSelectedCompetitionId(competitionId: string | null): void {
         return
     }
 
+    stopPnlChartReplay()
     state.selectedCompetitionId = competitionId
     syncSelectedCompetitionState()
+}
+
+export function getPnlChartReplayState(): PnlChartReplayState {
+    const replayState = state.pnlChartReplay
+    if (!replayState.isActive || replayState.startedAt === null) {
+        return replayState
+    }
+
+    if (Date.now() >= replayState.startedAt + replayState.durationMs) {
+        stopPnlChartReplay()
+    }
+
+    return state.pnlChartReplay
+}
+
+export function startPnlChartReplay(durationMs = 60_000): { ok: true } | { ok: false, error: string } {
+    const competitionId = state.selectedCompetitionId
+    if (competitionId === null) {
+        return { ok: false, error: 'No competition is selected.' }
+    }
+
+    const competitionState = getSelectedCompetitionState()
+    if (competitionState.leaderboard === null || competitionState.pnl === null) {
+        return { ok: false, error: 'The selected competition has no chart snapshot yet.' }
+    }
+
+    state.pnlChartReplay = {
+        isActive: true,
+        competitionId,
+        startedAt: Date.now(),
+        durationMs,
+        snapshot: {
+            leaderboard: competitionState.leaderboard,
+            pnl: competitionState.pnl,
+        },
+    }
+
+    return { ok: true }
+}
+
+export function stopPnlChartReplay(): void {
+    state.pnlChartReplay = createEmptyPnlChartReplayState()
 }
 
 export function setTraderEliminated(userId: string, isEliminated: boolean): void {

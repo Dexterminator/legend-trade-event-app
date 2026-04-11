@@ -1,7 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import type { Server } from 'node:http'
 import { URL } from 'node:url'
-import { getSelectedCompetitionState } from './state.js'
+import { getPnlChartReplayState, getSelectedCompetitionState } from './state.js'
 
 let appWss: WebSocketServer | null = null
 let pnlChartWss: WebSocketServer | null = null
@@ -35,6 +35,9 @@ export function createWsServer(server: Server): WebSocketServer {
                 message: 'Connection successful',
             },
         }))
+
+        sendCurrentPnlChartState(ws)
+        sendCurrentPnlChartReplayState(ws)
 
         ws.on('error', (err) => {
             console.error('[pnl chart ws client] error:', err.message)
@@ -135,4 +138,37 @@ export function broadcastPnlChart(data: object): void {
             client.send(msg)
         }
     }
+}
+
+export function broadcastCurrentPnlChartReplayState(): void {
+    broadcastPnlChart({
+        type: 'pnl_chart_replay',
+        payload: getPnlChartReplayState(),
+    })
+}
+
+function sendCurrentPnlChartState(ws: WebSocket): void {
+    if (ws.readyState !== WebSocket.OPEN) {
+        return
+    }
+
+    const competitionState = getSelectedCompetitionState()
+    ws.send(JSON.stringify({
+        type: 'pnl_chart',
+        payload: {
+            leaderboard: competitionState.leaderboard,
+            pnl: competitionState.pnl,
+        },
+    }))
+}
+
+function sendCurrentPnlChartReplayState(ws: WebSocket): void {
+    if (ws.readyState !== WebSocket.OPEN) {
+        return
+    }
+
+    ws.send(JSON.stringify({
+        type: 'pnl_chart_replay',
+        payload: getPnlChartReplayState(),
+    }))
 }
