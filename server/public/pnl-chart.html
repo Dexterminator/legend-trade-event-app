@@ -80,11 +80,6 @@
 			let lastCanvasHeight = 0;
 			let lastCanvasDpr = 0;
 
-			const timeFormatter = new Intl.DateTimeFormat(undefined, {
-				hour: 'numeric',
-				minute: '2-digit',
-			});
-
 			function getWsUrl() {
 				const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 				return `${protocol}//${window.location.host}/ws-pnl-chart`;
@@ -450,7 +445,7 @@
 					const ratio = xTickCount === 1 ? 0 : i / (xTickCount - 1);
 					const ts = prepared.windowStart + ratio * (prepared.windowEnd - prepared.windowStart);
 					const x = layout.plotLeft + ratio * layout.plotWidth;
-					ctx.fillText(formatTime(ts), x, layout.plotBottom + 14);
+					ctx.fillText(formatMinutesFromStart(ts, prepared.windowStart), x, layout.plotBottom + 14);
 				}
 
 				ctx.restore();
@@ -644,8 +639,10 @@
 				return ticks;
 			}
 
-			function formatTime(ts) {
-				return timeFormatter.format(new Date(ts)).replace(' ', '');
+			function formatMinutesFromStart(ts, windowStart) {
+				const elapsedMinutes = Math.max(0, (ts - windowStart) / 60000);
+				const roundedMinutes = Math.round(elapsedMinutes);
+				return `${roundedMinutes} min`;
 			}
 
 			window.addEventListener('resize', () => {
