@@ -440,12 +440,11 @@
 
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'top';
-				const xTickCount = 7;
-				for (let i = 0; i < xTickCount; i += 1) {
-					const ratio = xTickCount === 1 ? 0 : i / (xTickCount - 1);
-					const ts = prepared.windowStart + ratio * (prepared.windowEnd - prepared.windowStart);
-					const x = layout.plotLeft + ratio * layout.plotWidth;
-					ctx.fillText(formatMinutesFromStart(ts, prepared.windowStart), x, layout.plotBottom + 14);
+				const minuteTicks = getXMinuteTicks(prepared.windowStart, prepared.windowEnd, 7);
+				for (const minuteTick of minuteTicks) {
+					const ts = prepared.windowStart + minuteTick * 60000;
+					const x = toX(ts, layout, prepared);
+					ctx.fillText(`${minuteTick} min`, x, layout.plotBottom + 14);
 				}
 
 				ctx.restore();
@@ -639,10 +638,36 @@
 				return ticks;
 			}
 
-			function formatMinutesFromStart(ts, windowStart) {
-				const elapsedMinutes = Math.max(0, (ts - windowStart) / 60000);
-				const roundedMinutes = Math.round(elapsedMinutes);
-				return `${roundedMinutes} min`;
+			function getXMinuteTicks(windowStart, windowEnd, targetCount) {
+				const spanMinutes = Math.max(0, (windowEnd - windowStart) / 60000);
+				const maxMinute = Math.floor(spanMinutes);
+				if (maxMinute <= 0) {
+					return [0];
+				}
+
+				const step = getNiceMinuteStep(maxMinute, targetCount);
+				const ticks = [0];
+				for (let minute = step; minute <= maxMinute; minute += step) {
+					ticks.push(minute);
+				}
+
+				if (ticks[ticks.length - 1] !== maxMinute) {
+					ticks.push(maxMinute);
+				}
+
+				return ticks;
+			}
+
+			function getNiceMinuteStep(maxMinute, targetCount) {
+				const roughStep = maxMinute / Math.max(1, targetCount - 1);
+				const candidates = [1, 2, 3, 5, 10, 15, 30];
+				for (const candidate of candidates) {
+					if (candidate >= roughStep) {
+						return candidate;
+					}
+				}
+
+				return Math.max(1, Math.ceil(roughStep));
 			}
 
 			window.addEventListener('resize', () => {
