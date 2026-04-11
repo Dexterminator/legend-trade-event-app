@@ -161,7 +161,14 @@ app.post('/admin/trades/spawn-fake', (_req, res) => {
 })
 
 app.post('/admin/pnl-chart/replay/start', (_req, res) => {
-    const result = startPnlChartReplay(60_000)
+    const durationSeconds = _req.body?.['duration_seconds']
+    if (typeof durationSeconds !== 'number' || !Number.isFinite(durationSeconds)) {
+        res.status(400).json({ error: 'duration_seconds must be a number.' })
+        return
+    }
+
+    const durationMs = Math.round(durationSeconds * 1000)
+    const result = startPnlChartReplay(durationMs)
     if (!result.ok) {
         res.status(400).json({ error: result.error })
         return

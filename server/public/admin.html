@@ -62,6 +62,24 @@
 			gap: 12px;
 		}
 
+		.toolbar-actions label {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			color: var(--muted);
+			font-size: 13px;
+		}
+
+		.toolbar-actions input[type="number"] {
+			width: 84px;
+			padding: 8px 10px;
+			border-radius: 999px;
+			border: 1px solid var(--card-border);
+			background: var(--panel-soft);
+			color: var(--text);
+			font: inherit;
+		}
+
 		.toolbar-meta,
 		.toolbar-select {
 			display: inline-flex;
@@ -324,7 +342,9 @@
 				<select id="competition-select"></select>
 			</label>
 			<div class="toolbar-actions">
-				<button id="reconnect-external" class="pill" type="button">Reconnect</button>
+				<label for="replay-duration-seconds">Replay seconds
+					<input id="replay-duration-seconds" type="number" min="5" max="600" step="1" value="60">
+				</label>
 				<button id="start-replay" class="pill" type="button">Replay chart</button>
 				<button id="stop-replay" class="pill" type="button">Stop replay</button>
 				<button id="start-simulation" class="pill" type="button">Start simulation</button>
@@ -332,6 +352,7 @@
 				<button id="spawn-fake-trade" class="pill" type="button">Spawn fake trade</button>
 				<button id="eliminate-bottom-half" class="pill" type="button">Eliminate bottom half</button>
 				<button id="reset-eliminations" class="pill" type="button">Reset eliminations</button>
+				<button id="reconnect-external" class="pill" type="button">Reconnect</button>
 			</div>
 			<div class="toolbar-links">
 				<a class="pill" href="http://localhost:5050/index.html?overlay=standings" target="_blank"
@@ -358,6 +379,7 @@
 		const updatedAtEl = document.getElementById('updated-at')
 		const competitionSelectEl = document.getElementById('competition-select')
 		const reconnectExternalButtonEl = document.getElementById('reconnect-external')
+		const replayDurationSecondsEl = document.getElementById('replay-duration-seconds')
 		const startReplayButtonEl = document.getElementById('start-replay')
 		const stopReplayButtonEl = document.getElementById('stop-replay')
 		const startSimulationButtonEl = document.getElementById('start-simulation')
@@ -511,11 +533,13 @@
 			startReplayButtonEl.textContent = 'Replaying...'
 
 			try {
+				const replayDurationSeconds = Number(replayDurationSecondsEl.value)
 				const response = await fetch('/admin/pnl-chart/replay/start', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 					},
+					body: JSON.stringify({ duration_seconds: replayDurationSeconds }),
 				})
 
 				if (!response.ok) {
@@ -739,6 +763,7 @@
 		}
 
 		function syncCompetitionActionAvailability(hasSelection) {
+			replayDurationSecondsEl.disabled = !hasSelection || startReplayPending || stopReplayPending
 			startReplayButtonEl.disabled = !hasSelection || startReplayPending
 			stopReplayButtonEl.disabled = !hasSelection || stopReplayPending
 			startSimulationButtonEl.disabled = startSimulationPending

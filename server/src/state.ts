@@ -237,6 +237,10 @@ export function getPnlChartReplayState(): PnlChartReplayState {
 }
 
 export function startPnlChartReplay(durationMs = 60_000): { ok: true } | { ok: false, error: string } {
+    if (!Number.isFinite(durationMs) || durationMs < 5_000 || durationMs > 600_000) {
+        return { ok: false, error: 'Replay duration must be between 5 and 600 seconds.' }
+    }
+
     const competitionId = state.selectedCompetitionId
     if (competitionId === null) {
         return { ok: false, error: 'No competition is selected.' }
