@@ -62,6 +62,36 @@
 			gap: 12px;
 		}
 
+		.toolbar-meta,
+		.toolbar-select {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			color: var(--muted);
+			font-size: 13px;
+			min-height: 38px;
+			padding-right: 24px;
+			margin-right: 12px;
+			border-right: 1px solid rgba(255, 255, 255, 0.22);
+		}
+
+		.toolbar-select {
+			padding-right: 0;
+			margin-right: 0;
+			border-right: 0;
+		}
+
+		.toolbar-meta strong {
+			color: var(--text);
+		}
+
+		.toolbar-select select {
+			font: inherit;
+			color: var(--text);
+			background: #2f2f2f;
+			padding: 0;
+		}
+
 		.pill {
 			display: inline-flex;
 			align-items: center;
@@ -264,6 +294,13 @@
 				padding: 12px;
 			}
 
+			.toolbar-meta,
+			.toolbar-select {
+				padding-right: 0;
+				margin-right: 0;
+				border-right: 0;
+			}
+
 			.toolbar-links {
 				margin-left: 0;
 				width: 100%;
@@ -279,14 +316,15 @@
 <body>
 	<main class="shell">
 		<section class="toolbar">
-			<div class="pill"><span id="status-dot" class="dot"></span><strong id="status-text">Connecting</strong>
+			<div class="toolbar-meta"><span id="status-dot" class="dot"></span><strong
+					id="status-text">Connecting</strong>
 			</div>
-			<div class="pill">Updated <strong id="updated-at">never</strong></div>
-			<label class="pill" for="competition-select">Competition
+			<div class="toolbar-meta">Updated <strong id="updated-at">never</strong></div>
+			<label class="toolbar-select" for="competition-select">Competition
 				<select id="competition-select"></select>
 			</label>
 			<div class="toolbar-actions">
-				<button id="reconnect-external" class="pill" type="button">Clear graph</button>
+				<button id="reconnect-external" class="pill" type="button">Reconnect</button>
 				<button id="start-simulation" class="pill" type="button">Start simulation</button>
 				<button id="stop-simulation" class="pill" type="button">Stop simulation</button>
 				<button id="spawn-fake-trade" class="pill" type="button">Spawn fake trade</button>
