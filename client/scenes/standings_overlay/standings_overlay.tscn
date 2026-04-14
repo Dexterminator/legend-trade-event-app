@@ -60,7 +60,7 @@ horizontal_alignment = 1
 [node name="Label4" type="Label" parent="VBoxContainer/TableHeader/HBoxContainer" unique_id=943247563]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-text = "CTRY"
+text = "COUNTRY"
 horizontal_alignment = 1
 
 [node name="Label5" type="Label" parent="VBoxContainer/TableHeader/HBoxContainer" unique_id=945332305]

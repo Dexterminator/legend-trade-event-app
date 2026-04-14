@@ -4,6 +4,15 @@ extends Node2D
 ##   • Instantiates the matching overlay (or all overlays in native/editor mode).
 ##   • Manages the WebSocket connection to the server with exponential backoff.
 
+const MAX_PACKETS_PER_FRAME := 100
+
+var _packet_queue: Array[String] = []
+
+# Optional: keep only latest state (recommended for OBS)
+var _latest_leaderboard: Dictionary = {}
+var _latest_trade: Dictionary = {}
+
+
 # ── Overlay registry ──────────────────────────────────────────────────────────
 const OVERLAYS: Dictionary[String, PackedScene] = {
 	"standings": preload("res://scenes/standings_overlay/standings_overlay.tscn"),
@@ -25,11 +34,16 @@ var _attempt: int = 0
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 func _ready() -> void:
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("""
+			console.warn = function() {};
+			console.error = function() {};
+		""")
 	_spawn_overlay()
 	_connect_socket()
 
 func _process(delta: float) -> void:
-	# Reconnect countdown while socket is absent
+	# Reconnect logic
 	if _socket == null:
 		if _reconnect_timer > 0.0:
 			_reconnect_timer -= delta
@@ -41,19 +55,36 @@ func _process(delta: float) -> void:
 
 	match _socket.get_ready_state():
 		WebSocketPeer.STATE_OPEN:
-			# Reset backoff on successful connection
 			_reconnect_delay = BASE_DELAY
 			_attempt = 0
-			# Drain all available packets
-			while _socket.get_available_packet_count() > 0:
+
+			# 🚀 FAST DRAIN (no parsing, no signals)
+			var count := 0
+			while _socket.get_available_packet_count() > 0 and count < MAX_PACKETS_PER_FRAME:
 				var raw := _socket.get_packet().get_string_from_utf8()
-				_handle_message(raw)
+				_packet_queue.append(raw)
+				count += 1
 
 		WebSocketPeer.STATE_CLOSED:
 			_schedule_reconnect()
 
 		WebSocketPeer.STATE_CONNECTING, WebSocketPeer.STATE_CLOSING:
-			pass # wait
+			return
+
+	# 🧠 PROCESS AFTER DRAINING
+	for raw in _packet_queue:
+		_process_message_fast(raw)
+
+	_packet_queue.clear()
+
+	# 📉 Emit only latest (prevents UI spam)
+	if not _latest_leaderboard.is_empty():
+		SignalBus.standings_updated.emit(_latest_leaderboard)
+		_latest_leaderboard.clear()
+
+	if not _latest_trade.is_empty():
+		SignalBus.trade_update.emit(_latest_trade)
+		_latest_trade.clear()
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -71,7 +102,6 @@ func _spawn_overlay() -> void:
 	else:
 		key = "standings" # default for native/editor
 	if key in OVERLAYS:
-		print(key)
 		var overlay: Control = (OVERLAYS[key] as PackedScene).instantiate()
 		overlay.focus_mode = Control.FOCUS_NONE
 		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -93,27 +123,25 @@ func _schedule_reconnect() -> void:
 	print("[Main] Reconnecting in %.1fs (attempt %d)" % [_reconnect_delay, _attempt])
 
 
-func _handle_message(raw: String) -> void:
-	var parsed_data: Variant = JSON.parse_string(raw)
-	if not parsed_data is Dictionary:
-		push_warning("[Main] Unexpected message format: " + raw.left(120))
+func _process_message_fast(raw: String) -> void:
+	var parsed: Dictionary = JSON.parse_string(raw)
+	if not parsed is Dictionary:
 		return
-	var data: Dictionary = parsed_data
 
-	var msg_type: String = data.get("type", "")
-	var payload_value: Variant = data.get("payload", {})
-	if not payload_value is Dictionary:
-		if msg_type != "connected":
-			push_warning("[Main] Unexpected payload format for %s" % msg_type)
+	# ignore warning
+	var msg_type: String = parsed.get("type", "")
+	var payload: Variant = parsed.get("payload", {})
+
+	if not payload is Dictionary:
 		return
-	var payload: Dictionary = payload_value
 
 	match msg_type:
 		"connected":
 			pass
+
+		# 📉 KEEP ONLY LATEST
 		"leaderboard":
-				SignalBus.standings_updated.emit(payload)
+			_latest_leaderboard = payload
+
 		"trade_update":
-				SignalBus.trade_update.emit(payload)
-		_:
-			push_warning("[Main] Unknown message type: " + msg_type)
+			_latest_trade = payload
