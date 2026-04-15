@@ -11,9 +11,13 @@ var _is_eliminated := false
 var _is_simple := false
 
 func init(trader: Dictionary) -> void:
+	var user_name: String = trader["username"]
 	var country_code: String = trader["country_code"]
-	name_label.text = trader["username"]
-	flag_texture.texture = load("res://assets/flag_%s.png" % country_code.to_lower())
+	name_label.text = user_name
+	if user_name == "MADSPED":
+		flag_texture.texture = load("res://assets/flag_dk.png")
+	else:
+		flag_texture.texture = load("res://assets/flag_%s.png" % country_code.to_lower())
 	var is_eliminated: bool = trader.get("is_eliminated", false)
 	_apply_elimination_state(is_eliminated, false)
 

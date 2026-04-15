@@ -53,7 +53,10 @@ func init(trader: Dictionary, new_rank: int) -> void:
 	var user_name: String = trader["username"]
 	var country_code: String = trader["country_code"]
 	pfp_texture.texture = load("res://assets/%s.png" % user_name.to_lower())
-	flag_texture.texture = load("res://assets/flag_%s.png" % country_code.to_lower())
+	if user_name == "MADSPED":
+		flag_texture.texture = load("res://assets/flag_dk.png")
+	else:
+		flag_texture.texture = load("res://assets/flag_%s.png" % country_code.to_lower())
 
 func _update(updates: Dictionary) -> void:
 	_apply_elimination_state(_bool_value(updates.get("is_eliminated", false)))
