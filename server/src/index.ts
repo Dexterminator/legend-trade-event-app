@@ -2,8 +2,8 @@ import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { eliminateBottomHalf, getSelectedCompetitionId, resetEliminations, setSelectedCompetitionId, setTraderEliminated, spawnFakeTrade, startPnlChartReplay, state, stopPnlChartReplay } from './state.js'
-import { startTimerFileWriter, stopTimerFileWriter } from './timerFile.js'
+import { eliminateBottomHalf, getCustomTimerState, getSelectedCompetitionId, resetCustomTimer, resetEliminations, setSelectedCompetitionId, setTraderEliminated, spawnFakeTrade, startCustomTimer, startPnlChartReplay, state, stopPnlChartReplay } from './state.js'
+import { startCustomTimerFileWriter, startTimerFileWriter, stopCustomTimerFileWriter, stopTimerFileWriter } from './timerFile.js'
 import { broadcastCurrentPnlChartReplayState, createWsServer, closeWsServer, startStateBroadcast } from './wsServer.js'
 import { connectExternal, destroyExternal, reconnectExternal, subscribeExternalCompetition } from './wsExternal.js'
 
@@ -56,6 +56,7 @@ app.get('/token-images/:symbol.png', async (req, res) => {
 })
 
 app.get('/debug/state', (_req, res) => {
+    getCustomTimerState()
     res.json(state)
 })
 
@@ -161,6 +162,32 @@ app.post('/admin/trades/spawn-fake', (_req, res) => {
     res.status(204).end()
 })
 
+app.post('/admin/custom-timer/reset', (req, res) => {
+    const durationMinutes = req.body?.['duration_minutes']
+    if (typeof durationMinutes !== 'number' || !Number.isFinite(durationMinutes)) {
+        res.status(400).json({ error: 'duration_minutes must be a number.' })
+        return
+    }
+
+    const result = resetCustomTimer(durationMinutes)
+    if (!result.ok) {
+        res.status(400).json({ error: result.error })
+        return
+    }
+
+    res.status(204).end()
+})
+
+app.post('/admin/custom-timer/start', (_req, res) => {
+    const result = startCustomTimer()
+    if (!result.ok) {
+        res.status(400).json({ error: result.error })
+        return
+    }
+
+    res.status(204).end()
+})
+
 app.post('/admin/pnl-chart/replay/start', (_req, res) => {
     const durationSeconds = _req.body?.['duration_seconds']
     if (typeof durationSeconds !== 'number' || !Number.isFinite(durationSeconds)) {
@@ -198,6 +225,7 @@ const server = createServer(app)
 createWsServer(server)
 startStateBroadcast()
 startTimerFileWriter(path.join(PUBLIC_DIR, 'competition_timer.txt'))
+startCustomTimerFileWriter(path.join(PUBLIC_DIR, 'custom_timer.txt'))
 
 server.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`)
@@ -210,6 +238,7 @@ connectExternal()
 function shutdown(signal: string): void {
     console.log(`\nReceived ${signal} — shutting down …`)
     destroyExternal()
+    stopCustomTimerFileWriter()
     stopTimerFileWriter()
     closeWsServer()          // terminate WS clients + clear intervals
     server.closeAllConnections()  // drop open keep-alive HTTP connections

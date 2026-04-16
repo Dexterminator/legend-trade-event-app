@@ -373,6 +373,13 @@
 					<button id="stop-simulation" class="pill" type="button">Stop simulation</button>
 				</div>
 				<div class="toolbar-action-group">
+					<label for="custom-timer-minutes">Custom timer minutes
+						<input id="custom-timer-minutes" type="number" min="1" max="600" step="1" value="30">
+					</label>
+					<button id="reset-custom-timer" class="pill" type="button">Reset custom timer</button>
+					<button id="start-custom-timer" class="pill" type="button">Start custom timer</button>
+				</div>
+				<div class="toolbar-action-group">
 					<button id="reconnect-external" class="pill" type="button">Reconnect websocket</button>
 					<button id="spawn-fake-trade" class="pill" type="button">Spawn fake trade</button>
 				</div>
@@ -402,6 +409,9 @@
 		const updatedAtEl = document.getElementById('updated-at')
 		const competitionSelectEl = document.getElementById('competition-select')
 		const reconnectExternalButtonEl = document.getElementById('reconnect-external')
+		const customTimerMinutesEl = document.getElementById('custom-timer-minutes')
+		const resetCustomTimerButtonEl = document.getElementById('reset-custom-timer')
+		const startCustomTimerButtonEl = document.getElementById('start-custom-timer')
 		const replayDurationSecondsEl = document.getElementById('replay-duration-seconds')
 		const startReplayButtonEl = document.getElementById('start-replay')
 		const stopReplayButtonEl = document.getElementById('stop-replay')
@@ -421,6 +431,8 @@
 		let stopReplayPending = false
 		let startSimulationPending = false
 		let stopSimulationPending = false
+		let resetCustomTimerPending = false
+		let startCustomTimerPending = false
 		let spawnFakeTradePending = false
 		let eliminateBottomHalfPending = false
 		let resetEliminationsPending = false
@@ -636,6 +648,72 @@
 			}
 		}
 
+		async function resetCustomTimerAction() {
+			if (resetCustomTimerPending) {
+				return
+			}
+
+			resetCustomTimerPending = true
+			resetCustomTimerButtonEl.disabled = true
+			resetCustomTimerButtonEl.textContent = 'Resetting...'
+
+			try {
+				const durationMinutes = Number(customTimerMinutesEl.value)
+				const response = await fetch('/admin/custom-timer/reset', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ duration_minutes: durationMinutes }),
+				})
+
+				if (!response.ok) {
+					const payload = await response.json().catch(() => null)
+					throw new Error(payload?.error ?? `HTTP ${response.status}`)
+				}
+
+				await refresh()
+			} catch (error) {
+				renderError(error instanceof Error ? error.message : String(error))
+			} finally {
+				resetCustomTimerPending = false
+				resetCustomTimerButtonEl.disabled = false
+				resetCustomTimerButtonEl.textContent = 'Reset custom timer'
+			}
+		}
+
+		async function startCustomTimerAction() {
+			if (startCustomTimerPending) {
+				return
+			}
+
+			startCustomTimerPending = true
+			startCustomTimerButtonEl.disabled = true
+			startCustomTimerButtonEl.textContent = 'Starting...'
+
+			try {
+				const response = await fetch('/admin/custom-timer/start', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				if (!response.ok) {
+					const payload = await response.json().catch(() => null)
+					throw new Error(payload?.error ?? `HTTP ${response.status}`)
+				}
+
+				await refresh()
+			} catch (error) {
+				renderError(error instanceof Error ? error.message : String(error))
+			} finally {
+				startCustomTimerPending = false
+				startCustomTimerButtonEl.disabled = false
+				startCustomTimerButtonEl.textContent = 'Start custom timer'
+			}
+		}
+
 		async function spawnFakeTradeAction() {
 			if (spawnFakeTradePending) {
 				return
@@ -733,12 +811,14 @@
 				? nextState.selectedCompetitionId
 				: selectedCompetitionId
 			const availableCompetitions = Array.isArray(nextState?.availableCompetitions) ? nextState.availableCompetitions : []
+			const customTimer = nextState?.customTimer ?? null
 			const updatedAt = nextState?.competition?.leaderboard?.ts ?? nextState?.connection?.updatedAt ?? null
 			const traders = Array.isArray(nextState?.competition?.leaderboard?.traders)
 				? nextState.competition.leaderboard.traders
 				: []
 			syncCompetitionOptions(availableCompetitions, selectedCompetitionId)
 			syncCompetitionActionAvailability(Boolean(selectedCompetitionId))
+			syncCustomTimerControls(customTimer)
 
 			statusDotEl.classList.toggle('live', status === 'connected')
 			statusTextEl.textContent = status
@@ -794,6 +874,24 @@
 			spawnFakeTradeButtonEl.disabled = !hasSelection || spawnFakeTradePending
 			eliminateBottomHalfButtonEl.disabled = !hasSelection || eliminateBottomHalfPending
 			resetEliminationsButtonEl.disabled = !hasSelection || resetEliminationsPending
+		}
+
+		function syncCustomTimerControls(customTimer) {
+			const durationMinutes = Number(customTimer?.durationMinutes)
+			const isRunning = Boolean(customTimer?.isRunning)
+
+			if (Number.isFinite(durationMinutes) && document.activeElement !== customTimerMinutesEl && !resetCustomTimerPending) {
+				customTimerMinutesEl.value = String(durationMinutes)
+			}
+
+			customTimerMinutesEl.disabled = resetCustomTimerPending
+			resetCustomTimerButtonEl.disabled = resetCustomTimerPending
+			startCustomTimerButtonEl.disabled = startCustomTimerPending || isRunning
+			if (isRunning && !startCustomTimerPending) {
+				startCustomTimerButtonEl.textContent = 'Running...'
+			} else if (!startCustomTimerPending) {
+				startCustomTimerButtonEl.textContent = 'Start custom timer'
+			}
 		}
 
 		function syncCards(traders) {
@@ -1042,6 +1140,14 @@
 
 		stopSimulationButtonEl.addEventListener('click', () => {
 			void stopSimulationAction()
+		})
+
+		resetCustomTimerButtonEl.addEventListener('click', () => {
+			void resetCustomTimerAction()
+		})
+
+		startCustomTimerButtonEl.addEventListener('click', () => {
+			void startCustomTimerAction()
 		})
 
 		spawnFakeTradeButtonEl.addEventListener('click', () => {

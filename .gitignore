@@ -3,6 +3,7 @@ node_modules/
 server/dist/
 server/public/index.*
 server/public/competition_timer.txt
+server/public/custom_timer.txt
 
 # Release (keep the directory, not the contents)
 release/*

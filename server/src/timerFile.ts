@@ -1,72 +1,115 @@
 import { writeFile } from 'node:fs/promises'
-import { getSelectedCompetitionTimerWindow } from './state.js'
+import { getCustomTimerState, getSelectedCompetitionTimerWindow } from './state.js'
 
 const TIMER_UPDATE_INTERVAL_MS = 500
 const DEFAULT_TIMER_VALUE = '30:00'
 
-let timerInterval: ReturnType<typeof setInterval> | null = null
-let timerFilePath: string | null = null
-let lastWrittenValue: string | null = null
-let pendingValue: string | null = null
-let writeChain: Promise<void> = Promise.resolve()
+interface TimerWriterState {
+    interval: ReturnType<typeof setInterval> | null
+    filePath: string | null
+    lastWrittenValue: string | null
+    pendingValue: string | null
+    writeChain: Promise<void>
+}
+
+const competitionTimerWriterState: TimerWriterState = {
+    interval: null,
+    filePath: null,
+    lastWrittenValue: null,
+    pendingValue: null,
+    writeChain: Promise.resolve(),
+}
+
+const customTimerWriterState: TimerWriterState = {
+    interval: null,
+    filePath: null,
+    lastWrittenValue: null,
+    pendingValue: null,
+    writeChain: Promise.resolve(),
+}
 
 export function startTimerFileWriter(filePath: string): void {
-    timerFilePath = filePath
-
-    if (timerInterval !== null) {
-        clearInterval(timerInterval)
-    }
-
-    syncTimerFile()
-    timerInterval = setInterval(() => {
-        syncTimerFile()
-    }, TIMER_UPDATE_INTERVAL_MS)
+    startWriter(competitionTimerWriterState, filePath, getNextCompetitionTimerValue, 'competition timer')
 }
 
 export function stopTimerFileWriter(): void {
-    if (timerInterval !== null) {
-        clearInterval(timerInterval)
-        timerInterval = null
-    }
-
-    timerFilePath = null
-    pendingValue = null
+    stopWriter(competitionTimerWriterState)
 }
 
-function syncTimerFile(): void {
-    if (timerFilePath === null) {
+export function startCustomTimerFileWriter(filePath: string): void {
+    startWriter(customTimerWriterState, filePath, getNextCustomTimerValue, 'custom timer')
+}
+
+export function stopCustomTimerFileWriter(): void {
+    stopWriter(customTimerWriterState)
+}
+
+function startWriter(
+    writerState: TimerWriterState,
+    filePath: string,
+    getNextValue: () => string | null,
+    logLabel: string,
+): void {
+    writerState.filePath = filePath
+
+    if (writerState.interval !== null) {
+        clearInterval(writerState.interval)
+    }
+
+    syncWriter(writerState, getNextValue, logLabel)
+    writerState.interval = setInterval(() => {
+        syncWriter(writerState, getNextValue, logLabel)
+    }, TIMER_UPDATE_INTERVAL_MS)
+}
+
+function stopWriter(writerState: TimerWriterState): void {
+    if (writerState.interval !== null) {
+        clearInterval(writerState.interval)
+        writerState.interval = null
+    }
+
+    writerState.filePath = null
+    writerState.pendingValue = null
+}
+
+function syncWriter(
+    writerState: TimerWriterState,
+    getNextValue: () => string | null,
+    logLabel: string,
+): void {
+    if (writerState.filePath === null) {
         return
     }
 
-    const nextValue = getNextTimerValue()
-    if (nextValue === null || nextValue === lastWrittenValue || nextValue === pendingValue) {
+    const nextValue = getNextValue()
+    if (nextValue === null || nextValue === writerState.lastWrittenValue || nextValue === writerState.pendingValue) {
         return
     }
 
-    pendingValue = nextValue
-    writeChain = writeChain
+    writerState.pendingValue = nextValue
+    writerState.writeChain = writerState.writeChain
         .catch(() => undefined)
         .then(async () => {
-            if (timerFilePath === null || pendingValue === null) {
+            if (writerState.filePath === null || writerState.pendingValue === null) {
                 return
             }
 
-            const valueToWrite = pendingValue
-            pendingValue = null
+            const valueToWrite = writerState.pendingValue
+            writerState.pendingValue = null
 
-            if (valueToWrite === lastWrittenValue) {
+            if (valueToWrite === writerState.lastWrittenValue) {
                 return
             }
 
-            await writeFile(timerFilePath, valueToWrite, 'utf8')
-            lastWrittenValue = valueToWrite
+            await writeFile(writerState.filePath, valueToWrite, 'utf8')
+            writerState.lastWrittenValue = valueToWrite
         })
         .catch((error: unknown) => {
-            console.error('Failed to update competition timer file', { filePath: timerFilePath, error })
+            console.error(`Failed to update ${logLabel} file`, { filePath: writerState.filePath, error })
         })
 }
 
-function getNextTimerValue(): string | null {
+function getNextCompetitionTimerValue(): string | null {
     const timerWindow = getSelectedCompetitionTimerWindow()
 
     if (timerWindow.startedAt === null || timerWindow.endsAt === null) {
@@ -75,6 +118,10 @@ function getNextTimerValue(): string | null {
 
     const remainingMs = Math.max(timerWindow.endsAt - Date.now(), 0)
     return formatTimerValue(remainingMs)
+}
+
+function getNextCustomTimerValue(): string | null {
+    return formatTimerValue(getCustomTimerState().remainingMs)
 }
 
 function formatTimerValue(remainingMs: number): string {

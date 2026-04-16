@@ -148,15 +148,26 @@ export interface SelectedCompetitionTimerWindow {
     hasObservedValidWindow: boolean
 }
 
+export interface CustomTimerState {
+    durationMinutes: number
+    remainingMs: number
+    startedAt: number | null
+    endsAt: number | null
+    isRunning: boolean
+}
+
 export interface State {
     connection: ConnectionState
     availableCompetitions: ActiveCompetitionEntry[]
     selectedCompetitionId: string | null
     selectedCompetitionTimerWindow: SelectedCompetitionTimerWindow
+    customTimer: CustomTimerState
     competitionStates: Record<string, CompetitionState>
     competition: CompetitionState
     pnlChartReplay: PnlChartReplayState
 }
+
+const DEFAULT_CUSTOM_TIMER_MINUTES = 30
 
 function createEmptyCompetitionState(): CompetitionState {
     return {
@@ -187,6 +198,17 @@ function createEmptySelectedCompetitionTimerWindow(): SelectedCompetitionTimerWi
     }
 }
 
+function createDefaultCustomTimerState(): CustomTimerState {
+    const remainingMs = DEFAULT_CUSTOM_TIMER_MINUTES * 60_000
+    return {
+        durationMinutes: DEFAULT_CUSTOM_TIMER_MINUTES,
+        remainingMs,
+        startedAt: null,
+        endsAt: null,
+        isRunning: false,
+    }
+}
+
 export const state: State = {
     connection: {
         url: '',
@@ -202,6 +224,7 @@ export const state: State = {
     availableCompetitions: [],
     selectedCompetitionId: null,
     selectedCompetitionTimerWindow: createEmptySelectedCompetitionTimerWindow(),
+    customTimer: createDefaultCustomTimerState(),
     competitionStates: {},
     competition: createEmptyCompetitionState(),
     pnlChartReplay: createEmptyPnlChartReplayState(),
@@ -231,6 +254,55 @@ export function getSelectedCompetitionState(): CompetitionState {
 
 export function getSelectedCompetitionTimerWindow(): SelectedCompetitionTimerWindow {
     return state.selectedCompetitionTimerWindow
+}
+
+export function getCustomTimerState(): CustomTimerState {
+    syncCustomTimerProgress()
+    return state.customTimer
+}
+
+export function resetCustomTimer(durationMinutes: number): { ok: true } | { ok: false, error: string } {
+    if (!Number.isFinite(durationMinutes) || !Number.isInteger(durationMinutes) || durationMinutes <= 0 || durationMinutes > 600) {
+        return { ok: false, error: 'duration_minutes must be an integer between 1 and 600.' }
+    }
+
+    const remainingMs = durationMinutes * 60_000
+    state.customTimer = {
+        durationMinutes,
+        remainingMs,
+        startedAt: null,
+        endsAt: null,
+        isRunning: false,
+    }
+
+    return { ok: true }
+}
+
+export function startCustomTimer(): { ok: true } | { ok: false, error: string } {
+    syncCustomTimerProgress()
+
+    if (state.customTimer.isRunning) {
+        return { ok: true }
+    }
+
+    const remainingMs = state.customTimer.remainingMs > 0
+        ? state.customTimer.remainingMs
+        : state.customTimer.durationMinutes * 60_000
+
+    if (remainingMs <= 0) {
+        return { ok: false, error: 'The custom timer has no remaining time.' }
+    }
+
+    const startedAt = Date.now()
+    state.customTimer = {
+        ...state.customTimer,
+        remainingMs,
+        startedAt,
+        endsAt: startedAt + remainingMs,
+        isRunning: true,
+    }
+
+    return { ok: true }
 }
 
 export function setSelectedCompetitionId(competitionId: string | null): void {
@@ -546,6 +618,36 @@ function syncSelectedCompetitionTimerWindow(selectedCompetitionId: string | null
         startedAt,
         endsAt,
         hasObservedValidWindow: state.selectedCompetitionTimerWindow.hasObservedValidWindow || hasValidWindow,
+    }
+}
+
+function syncCustomTimerProgress(): void {
+    const customTimer = state.customTimer
+    if (!customTimer.isRunning || customTimer.endsAt === null) {
+        if (customTimer.remainingMs < 0) {
+            state.customTimer = {
+                ...customTimer,
+                remainingMs: 0,
+            }
+        }
+        return
+    }
+
+    const remainingMs = Math.max(customTimer.endsAt - Date.now(), 0)
+    if (remainingMs === 0) {
+        state.customTimer = {
+            ...customTimer,
+            remainingMs: 0,
+            startedAt: null,
+            endsAt: null,
+            isRunning: false,
+        }
+        return
+    }
+
+    state.customTimer = {
+        ...customTimer,
+        remainingMs,
     }
 }
 
