@@ -3,6 +3,7 @@ import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { eliminateBottomHalf, getSelectedCompetitionId, resetEliminations, setSelectedCompetitionId, setTraderEliminated, spawnFakeTrade, startPnlChartReplay, state, stopPnlChartReplay } from './state.js'
+import { startTimerFileWriter, stopTimerFileWriter } from './timerFile.js'
 import { broadcastCurrentPnlChartReplayState, createWsServer, closeWsServer, startStateBroadcast } from './wsServer.js'
 import { connectExternal, destroyExternal, reconnectExternal, subscribeExternalCompetition } from './wsExternal.js'
 
@@ -196,6 +197,7 @@ app.get('*', (_req, res) => {
 const server = createServer(app)
 createWsServer(server)
 startStateBroadcast()
+startTimerFileWriter(path.join(PUBLIC_DIR, 'competition_timer.txt'))
 
 server.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`)
@@ -208,6 +210,7 @@ connectExternal()
 function shutdown(signal: string): void {
     console.log(`\nReceived ${signal} — shutting down …`)
     destroyExternal()
+    stopTimerFileWriter()
     closeWsServer()          // terminate WS clients + clear intervals
     server.closeAllConnections()  // drop open keep-alive HTTP connections
     server.close(() => {

@@ -142,10 +142,17 @@ export interface PnlChartReplayState {
     snapshot: PnlChartSnapshot | null
 }
 
+export interface SelectedCompetitionTimerWindow {
+    startedAt: number | null
+    endsAt: number | null
+    hasObservedValidWindow: boolean
+}
+
 export interface State {
     connection: ConnectionState
     availableCompetitions: ActiveCompetitionEntry[]
     selectedCompetitionId: string | null
+    selectedCompetitionTimerWindow: SelectedCompetitionTimerWindow
     competitionStates: Record<string, CompetitionState>
     competition: CompetitionState
     pnlChartReplay: PnlChartReplayState
@@ -172,6 +179,14 @@ function createEmptyPnlChartReplayState(): PnlChartReplayState {
     }
 }
 
+function createEmptySelectedCompetitionTimerWindow(): SelectedCompetitionTimerWindow {
+    return {
+        startedAt: null,
+        endsAt: null,
+        hasObservedValidWindow: false,
+    }
+}
+
 export const state: State = {
     connection: {
         url: '',
@@ -186,6 +201,7 @@ export const state: State = {
     },
     availableCompetitions: [],
     selectedCompetitionId: null,
+    selectedCompetitionTimerWindow: createEmptySelectedCompetitionTimerWindow(),
     competitionStates: {},
     competition: createEmptyCompetitionState(),
     pnlChartReplay: createEmptyPnlChartReplayState(),
@@ -211,6 +227,10 @@ export function getSelectedCompetitionId(): string | null {
 
 export function getSelectedCompetitionState(): CompetitionState {
     return state.competition
+}
+
+export function getSelectedCompetitionTimerWindow(): SelectedCompetitionTimerWindow {
+    return state.selectedCompetitionTimerWindow
 }
 
 export function setSelectedCompetitionId(competitionId: string | null): void {
@@ -388,8 +408,8 @@ export function applyCompetitionEnvelope(envelope: CompetitionEnvelope): void {
             state.availableCompetitions = envelope.data.slice()
             if (state.selectedCompetitionId === null) {
                 state.selectedCompetitionId = state.availableCompetitions[0]?.competition_id ?? null
-                syncSelectedCompetitionState()
             }
+            syncSelectedCompetitionState()
             return
 
         case 'activity':
@@ -494,6 +514,39 @@ function syncSelectedCompetitionState(): void {
     state.competition = selectedCompetitionId === null
         ? createEmptyCompetitionState()
         : getCompetitionState(selectedCompetitionId)
+
+    syncSelectedCompetitionTimerWindow(selectedCompetitionId)
+}
+
+function syncSelectedCompetitionTimerWindow(selectedCompetitionId: string | null): void {
+    if (selectedCompetitionId === null) {
+        state.selectedCompetitionTimerWindow = {
+            ...state.selectedCompetitionTimerWindow,
+            startedAt: null,
+            endsAt: null,
+        }
+        return
+    }
+
+    const selectedCompetition = state.availableCompetitions.find((competition) => competition.competition_id === selectedCompetitionId)
+    if (selectedCompetition === undefined) {
+        state.selectedCompetitionTimerWindow = {
+            ...state.selectedCompetitionTimerWindow,
+            startedAt: null,
+            endsAt: null,
+        }
+        return
+    }
+
+    const startedAt = normalizeCompetitionTimestamp(selectedCompetition.started_at)
+    const endsAt = normalizeCompetitionTimestamp(selectedCompetition.ends_at)
+    const hasValidWindow = startedAt !== null && endsAt !== null
+
+    state.selectedCompetitionTimerWindow = {
+        startedAt,
+        endsAt,
+        hasObservedValidWindow: state.selectedCompetitionTimerWindow.hasObservedValidWindow || hasValidWindow,
+    }
 }
 
 function getCompetitionState(competitionId: string): CompetitionState {
@@ -540,6 +593,14 @@ function getEnvelopeCompetitionId(
         case 'pnl:tick':
             return typeof envelope.data.competition_id === 'string' ? envelope.data.competition_id : null
     }
+}
+
+function normalizeCompetitionTimestamp(value: number): number | null {
+    if (!Number.isFinite(value) || value <= 0) {
+        return null
+    }
+
+    return value < 1_000_000_000_000 ? value * 1000 : value
 }
 
 function randomInt(min: number, max: number): number {
