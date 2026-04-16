@@ -139,6 +139,11 @@
 			color: var(--text);
 		}
 
+		.pill.timer-state strong {
+			font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+			font-variant-numeric: tabular-nums;
+		}
+
 		a.pill {
 			color: var(--accent);
 			text-decoration: none;
@@ -354,6 +359,7 @@
 			<label class="toolbar-select" for="competition-select">Competition
 				<select id="competition-select"></select>
 			</label>
+			<div class="pill timer-state">Competition timer <strong id="competition-timer-state">30:00</strong></div>
 			<div class="toolbar-actions">
 				<div class="toolbar-action-group">
 					<label for="replay-duration-seconds">Replay seconds
@@ -376,8 +382,9 @@
 					<label for="custom-timer-minutes">Custom timer minutes
 						<input id="custom-timer-minutes" type="number" min="1" max="600" step="1" value="30">
 					</label>
+					<div class="pill timer-state"><strong id="custom-timer-state">30:00</strong></div>
 					<button id="reset-custom-timer" class="pill" type="button">Reset custom timer</button>
-					<button id="start-custom-timer" class="pill" type="button">Start custom timer</button>
+					<button id="start-custom-timer" class="pill" type="button">Start custom timer countdown</button>
 				</div>
 				<div class="toolbar-action-group">
 					<button id="reconnect-external" class="pill" type="button">Reconnect websocket</button>
@@ -408,8 +415,10 @@
 		const statusTextEl = document.getElementById('status-text')
 		const updatedAtEl = document.getElementById('updated-at')
 		const competitionSelectEl = document.getElementById('competition-select')
+		const competitionTimerStateEl = document.getElementById('competition-timer-state')
 		const reconnectExternalButtonEl = document.getElementById('reconnect-external')
 		const customTimerMinutesEl = document.getElementById('custom-timer-minutes')
+		const customTimerStateEl = document.getElementById('custom-timer-state')
 		const resetCustomTimerButtonEl = document.getElementById('reset-custom-timer')
 		const startCustomTimerButtonEl = document.getElementById('start-custom-timer')
 		const replayDurationSecondsEl = document.getElementById('replay-duration-seconds')
@@ -436,6 +445,7 @@
 		let spawnFakeTradePending = false
 		let eliminateBottomHalfPending = false
 		let resetEliminationsPending = false
+		let competitionTimerDisplayValue = '30:00'
 
 		async function refresh() {
 			try {
@@ -812,12 +822,14 @@
 				: selectedCompetitionId
 			const availableCompetitions = Array.isArray(nextState?.availableCompetitions) ? nextState.availableCompetitions : []
 			const customTimer = nextState?.customTimer ?? null
+			const competitionTimer = nextState?.selectedCompetitionTimerWindow ?? null
 			const updatedAt = nextState?.competition?.leaderboard?.ts ?? nextState?.connection?.updatedAt ?? null
 			const traders = Array.isArray(nextState?.competition?.leaderboard?.traders)
 				? nextState.competition.leaderboard.traders
 				: []
 			syncCompetitionOptions(availableCompetitions, selectedCompetitionId)
 			syncCompetitionActionAvailability(Boolean(selectedCompetitionId))
+			syncCompetitionTimerState(competitionTimer)
 			syncCustomTimerControls(customTimer)
 
 			statusDotEl.classList.toggle('live', status === 'connected')
@@ -879,10 +891,13 @@
 		function syncCustomTimerControls(customTimer) {
 			const durationMinutes = Number(customTimer?.durationMinutes)
 			const isRunning = Boolean(customTimer?.isRunning)
+			const remainingMs = Number(customTimer?.remainingMs)
 
 			if (Number.isFinite(durationMinutes) && document.activeElement !== customTimerMinutesEl && !resetCustomTimerPending) {
 				customTimerMinutesEl.value = String(durationMinutes)
 			}
+
+			customTimerStateEl.textContent = formatTimerValue(Number.isFinite(remainingMs) ? remainingMs : 0)
 
 			customTimerMinutesEl.disabled = resetCustomTimerPending
 			resetCustomTimerButtonEl.disabled = resetCustomTimerPending
@@ -892,6 +907,20 @@
 			} else if (!startCustomTimerPending) {
 				startCustomTimerButtonEl.textContent = 'Start custom timer'
 			}
+		}
+
+		function syncCompetitionTimerState(timerWindow) {
+			const startedAt = Number(timerWindow?.startedAt)
+			const endsAt = Number(timerWindow?.endsAt)
+			const hasObservedValidWindow = Boolean(timerWindow?.hasObservedValidWindow)
+
+			if (Number.isFinite(startedAt) && Number.isFinite(endsAt)) {
+				competitionTimerDisplayValue = formatTimerValue(Math.max(endsAt - Date.now(), 0))
+			} else if (!hasObservedValidWindow) {
+				competitionTimerDisplayValue = '30:00'
+			}
+
+			competitionTimerStateEl.textContent = competitionTimerDisplayValue
 		}
 
 		function syncCards(traders) {
@@ -1110,6 +1139,15 @@
 				minute: '2-digit',
 				second: '2-digit',
 			})
+		}
+
+		function formatTimerValue(remainingMs) {
+			const safeRemainingMs = Math.max(Number(remainingMs) || 0, 0)
+			const totalSeconds = Math.floor(safeRemainingMs / 1000)
+			const minutes = Math.floor(totalSeconds / 60)
+			const seconds = totalSeconds % 60
+
+			return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 		}
 
 		reconnectExternalButtonEl.addEventListener('click', () => {
