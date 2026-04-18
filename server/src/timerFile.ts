@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises'
 import { getCustomTimerState, getSelectedCompetitionTimerWindow } from './state.js'
 
-const TIMER_UPDATE_INTERVAL_MS = 500
+const TIMER_UPDATE_INTERVAL_MS = 250
 const DEFAULT_TIMER_VALUE = '30:00'
 
 interface TimerWriterState {
